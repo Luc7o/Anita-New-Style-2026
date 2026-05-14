@@ -1,0 +1,52 @@
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Pedidos{% endblock %}
+{% block topbar_titulo %}Gestión de Pedidos{% endblock %}
+{% block contenido %}
+<!-- Filtros estado -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+  <a href="{{ url_for('admin.pedidos') }}" class="btn btn-sm {{ 'btn-admin-primary' if not estado_sel else 'btn-outline-secondary' }}">Todos</a>
+  {% for key, label in ESTADOS.items() %}
+  <a href="{{ url_for('admin.pedidos', estado=key) }}" class="btn btn-sm {{ 'btn-admin-primary' if estado_sel == key else 'btn-outline-secondary' }}">{{ label }}</a>
+  {% endfor %}
+</div>
+<div class="admin-card">
+  <div class="table-responsive">
+    <table class="table table-admin table-hover align-middle">
+      <thead><tr><th>#Pedido</th><th>Cliente</th><th>Total</th><th>Método pago</th><th>Estado pago</th><th>Estado pedido</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pedidos.items %}
+      <tr>
+        <td><code>{{ p.numero_pedido }}</code></td>
+        <td>
+          <strong>{{ p.cliente.nombre_completo }}</strong><br>
+          <small class="text-muted">{{ p.cliente.email }}</small>
+        </td>
+        <td><strong>{{ p.total | moneda }}</strong></td>
+        <td><span class="badge bg-light text-dark">{{ p.metodo_pago_label }}</span></td>
+        <td>
+          {% if p.estado_pago == 'pagado' %}<span class="badge bg-success">Pagado</span>
+          {% elif p.estado_pago == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>
+          {% else %}<span class="badge bg-danger">{{ p.estado_pago_label }}</span>{% endif %}
+        </td>
+        <td><span class="badge-estado {{ p.estado }}">{{ p.estado_label }}</span></td>
+        <td class="text-muted small">{{ p.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td><a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn btn-xs btn-outline-primary">Gestionar</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-4 text-muted">No hay pedidos.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pedidos.pages > 1 %}
+  <nav class="d-flex justify-content-center mt-3">
+    <ul class="pagination pagination-sm">
+      {% for p in pedidos.iter_pages() %}
+      {% if p %}<li class="page-item {{ 'active' if p == pedidos.page }}"><a class="page-link" href="{{ url_for('admin.pedidos', pagina=p, estado=estado_sel) }}">{{ p }}</a></li>
+      {% else %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+      {% endfor %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

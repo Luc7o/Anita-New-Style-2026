@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block titulo %}Checkout{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <h2 class="page-title mb-4"><i class="bi bi-bag-check me-2"></i>Finalizar pedido</h2>
+  <form method="post" id="formCheckout">
+    {{ form.hidden_tag() }}
+    <div class="row g-4">
+      <!-- Datos de entrega -->
+      <div class="col-lg-7">
+        <div class="checkout-card mb-4">
+          <h5 class="checkout-section-title"><i class="bi bi-person-lines-fill me-2"></i>Datos de contacto</h5>
+          <div class="row g-3">
+            <div class="col-12 mb-2">
+              <label class="form-label-ans">DNI del destinatario <span class="text-muted small">(opcional — autocompleta nombre)</span></label>
+              <div style="position:relative"><input type="text" id="dni_checkout" name="dni_checkout" class="form-control form-control-ans" data-tipo="dni" placeholder="12345678"><div class="dni-badge"></div></div>
+            </div>
+            <div class="col-md-8">{{ form.nombre.label(class="form-label-ans") }}{{ form.nombre(class="form-control form-control-ans") }}</div>
+            <div class="col-md-4">{{ form.telefono.label(class="form-label-ans") }}{{ form.telefono(class="form-control form-control-ans") }}</div>
+          </div>
+        </div>
+        <!-- Tipo entrega -->
+        <div class="checkout-card mb-4">
+          <h5 class="checkout-section-title"><i class="bi bi-truck me-2"></i>Tipo de entrega</h5>
+          <div class="row g-3">
+            {% for val, label in form.tipo_entrega.choices %}
+            <div class="col-md-6">
+              <label class="entrega-opcion {{ 'active' if val == form.tipo_entrega.data }}">
+                <input type="radio" name="tipo_entrega" value="{{ val }}" {{ 'checked' if val == form.tipo_entrega.data }} onchange="toggleDireccion(this.value)">
+                <i class="bi bi-{{ 'truck' if val == 'delivery' else 'shop-window' }} fs-4"></i>
+                <span>{{ label }}</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Dirección (solo delivery) -->
+        <div class="checkout-card mb-4" id="secDireccion">
+          <h5 class="checkout-section-title"><i class="bi bi-geo-alt me-2"></i>Dirección de envío</h5>
+          <div class="row g-3">
+            <div class="col-12">{{ form.direccion.label(class="form-label-ans") }}{{ form.direccion(class="form-control form-control-ans", placeholder="Av. / Jr. / Ca. ...") }}</div>
+            <div class="col-md-4">{{ form.distrito.label(class="form-label-ans") }}{{ form.distrito(class="form-control form-control-ans") }}</div>
+            <div class="col-md-4">{{ form.provincia.label(class="form-label-ans") }}{{ form.provincia(class="form-control form-control-ans") }}</div>
+            <div class="col-md-4">{{ form.departamento.label(class="form-label-ans") }}{{ form.departamento(class="form-control form-control-ans") }}</div>
+            <div class="col-12">{{ form.referencia.label(class="form-label-ans") }}{{ form.referencia(class="form-control form-control-ans", placeholder="Referencia para el delivery") }}</div>
+          </div>
+        </div>
+        <!-- Método de pago -->
+        <div class="checkout-card mb-4">
+          <h5 class="checkout-section-title"><i class="bi bi-credit-card me-2"></i>Método de pago</h5>
+          <div class="row g-3">
+            {% for val, label in form.metodo_pago.choices %}
+            <div class="col-6 col-md-3">
+              <label class="pago-opcion">
+                <input type="radio" name="metodo_pago" value="{{ val }}" {{ 'checked' if val == form.metodo_pago.data }}>
+                <i class="bi bi-{{ 'phone' if val=='yape' else 'credit-card' if val=='tarjeta' else 'cash-coin' if val=='efectivo' else 'shop' }} fs-3"></i>
+                <span>{{ label }}</span>
+              </label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Nota -->
+        <div class="checkout-card">
+          <h5 class="checkout-section-title"><i class="bi bi-chat-text me-2"></i>Nota del pedido (opcional)</h5>
+          {{ form.nota(class="form-control form-control-ans", rows=3, placeholder="Instrucciones especiales...") }}
+        </div>
+      </div>
+      <!-- Resumen -->
+      <div class="col-lg-5">
+        <div class="resumen-card sticky-top" style="top:100px">
+          <h5 class="resumen-title">Resumen del pedido</h5>
+          {% for item in items %}
+          <div class="resumen-item">
+            <span class="resumen-item-nombre">{{ item.producto.nombre }} {% if item.talla %}({{ item.talla }}){% endif %} ×{{ item.cantidad }}</span>
+            <span>{{ item.subtotal | moneda }}</span>
+          </div>
+          {% endfor %}
+          <hr>
+          <div class="resumen-linea"><span>Subtotal</span><span>{{ subtotal | moneda }}</span></div>
+          <div class="resumen-linea">
+            <span>Envío</span>
+            <span>{% if costo_envio == 0 %}<span class="text-success">¡Gratis!</span>{% else %}{{ costo_envio | moneda }}{% endif %}</span>
+          </div>
+          <hr>
+          <div class="resumen-total"><span>Total</span><span>{{ total | moneda }}</span></div>
+          <button type="submit" class="btn btn-ans w-100 btn-lg mt-3">
+            <i class="bi bi-lock me-2"></i>Confirmar pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+<script>
+function toggleDireccion(val) {
+  document.getElementById('secDireccion').style.display = val === 'recojo' ? 'none' : 'block';
+  document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
+  event.target.closest('.entrega-opcion').classList.add('active');
+}
+document.querySelectorAll('.pago-opcion input').forEach(r => r.addEventListener('change', function() {
+  document.querySelectorAll('.pago-opcion').forEach(el => el.classList.remove('active'));
+  this.closest('.pago-opcion').classList.add('active');
+}));
+document.querySelectorAll('.entrega-opcion input').forEach(r => r.addEventListener('change', function() {
+  document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
+  this.closest('.entrega-opcion').classList.add('active');
+}));
+// Marcar activos al cargar
+document.querySelectorAll('.pago-opcion input:checked, .entrega-opcion input:checked').forEach(r => r.closest('label').classList.add('active'));
+</script>
+{% endblock %}

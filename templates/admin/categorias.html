@@ -1,0 +1,25 @@
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Categorías{% endblock %}
+{% block topbar_titulo %}Categorías{% endblock %}
+{% block contenido %}
+<div class="d-flex justify-content-end mb-4">
+  <a href="{{ url_for('admin.nueva_categoria') }}" class="btn btn-admin-primary"><i class="bi bi-plus-lg me-1"></i>Nueva categoría</a>
+</div>
+<div class="admin-card">
+  <div class="table-responsive">
+    <table class="table table-admin align-middle">
+      <thead><tr><th>Nombre</th><th>Slug</th><th>Productos</th><th>Estado</th></tr></thead>
+      <tbody>
+      {% for cat in categorias %}
+      <tr>
+        <td><strong>{{ cat.nombre }}</strong></td>
+        <td><code>{{ cat.slug }}</code></td>
+        <td>{{ cat.productos.count() }}</td>
+        <td>{% if cat.activo %}<span class="badge bg-success-soft">Activa</span>{% else %}<span class="badge bg-secondary">Inactiva</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

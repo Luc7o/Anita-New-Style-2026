@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Editar perfil{% endblock %}
+{% block contenido %}
+<div class="container py-5" style="max-width:700px">
+  <div class="perfil-card">
+    <h4 class="perfil-card-title"><i class="bi bi-pencil me-2"></i>Editar información</h4>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="row g-3">
+
+        <!-- DNI con auto-completado -->
+        <div class="col-12">
+          <label class="form-label-ans">
+            DNI
+            <span class="text-muted small ms-1">— escribe tu DNI para completar tu nombre automáticamente</span>
+          </label>
+          <div style="position:relative">
+            {{ form.dni(class="form-control form-control-ans", data_tipo="dni", maxlength="8", placeholder="12345678") }}
+            <div class="dni-badge"></div>
+          </div>
+        </div>
+
+        <div class="col-md-6">{{ form.nombre.label(class="form-label-ans") }}{{ form.nombre(class="form-control form-control-ans") }}</div>
+        <div class="col-md-6">{{ form.apellido.label(class="form-label-ans") }}{{ form.apellido(class="form-control form-control-ans") }}</div>
+        <div class="col-md-6">{{ form.telefono.label(class="form-label-ans") }}{{ form.telefono(class="form-control form-control-ans") }}</div>
+
+        <div class="col-12"><hr><h6 class="text-accent">Dirección de entrega</h6></div>
+        <div class="col-12">{{ form.direccion.label(class="form-label-ans") }}{{ form.direccion(class="form-control form-control-ans") }}</div>
+        <div class="col-md-4">{{ form.distrito.label(class="form-label-ans") }}{{ form.distrito(class="form-control form-control-ans") }}</div>
+        <div class="col-md-4">{{ form.provincia.label(class="form-label-ans") }}{{ form.provincia(class="form-control form-control-ans") }}</div>
+        <div class="col-md-4">{{ form.departamento.label(class="form-label-ans") }}{{ form.departamento(class="form-control form-control-ans") }}</div>
+        <div class="col-12">{{ form.referencia.label(class="form-label-ans") }}{{ form.referencia(class="form-control form-control-ans") }}</div>
+        <div class="col-12 d-flex gap-3 mt-2">
+          {{ form.submit(class="btn btn-ans") }}
+          <a href="{{ url_for('perfil.perfil') }}" class="btn btn-outline-ans">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

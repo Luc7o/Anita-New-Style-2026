@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block titulo %}Inicio{% endblock %}
+{% block contenido %}
+
+<!-- ── HERO ──────────────────────────────────────────────────────────────── -->
+<section class="hero-section">
+  <div class="hero-overlay"></div>
+  <div class="container hero-content text-center">
+    <p class="hero-subtitle">Nueva colección 2024</p>
+    <h1 class="hero-title">Tu estilo,<br>tu <em>esencia</em></h1>
+    <p class="hero-desc">Descubre la moda que te hace brillar: calzados, vestidos, carteras y más.</p>
+    <div class="d-flex gap-3 justify-content-center mt-4">
+      <a href="{{ url_for('tienda.productos') }}" class="btn btn-hero-primary">Ver colección</a>
+      <a href="{{ url_for('tienda.productos', orden='popular') }}" class="btn btn-hero-outline">Más vendidos</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── CATEGORÍAS ─────────────────────────────────────────────────────────── -->
+<section class="py-5">
+  <div class="container">
+    <div class="section-header text-center mb-4">
+      <p class="section-label">Explora</p>
+      <h2 class="section-title">Nuestras <em>Categorías</em></h2>
+    </div>
+    <div class="row g-3 justify-content-center">
+      {% for cat in categorias %}
+      <div class="col-6 col-md-4 col-lg-2">
+        <a href="{{ url_for('tienda.productos', categoria=cat.slug) }}" class="cat-card text-decoration-none">
+          <div class="cat-icon"><i class="bi bi-bag-heart"></i></div>
+          <span>{{ cat.nombre }}</span>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ── PRODUCTOS DESTACADOS ───────────────────────────────────────────────── -->
+{% if destacados %}
+<section class="py-5" style="background:rgba(165,54,148,.03)">
+  <div class="container">
+    <div class="section-header d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <p class="section-label">Selección especial</p>
+        <h2 class="section-title">Productos <em>Destacados</em></h2>
+      </div>
+      <a href="{{ url_for('tienda.productos') }}" class="btn-ver-mas">Ver todos <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="row g-3">
+      {% for prod in destacados %}
+      <div class="col-6 col-md-4 col-lg-3">{% include 'tienda/_tarjeta_producto.html' %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── BANNER CENTRAL ─────────────────────────────────────────────────────── -->
+<section class="py-5">
+  <div class="container">
+    <div class="banner-card text-center">
+      <p class="banner-label">Oferta especial</p>
+      <h2>Envío gratis en pedidos<br>mayores a <strong>S/ 150</strong></h2>
+      <a href="{{ url_for('tienda.productos') }}" class="btn btn-ans mt-3 px-4">Comprar ahora</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── NOVEDADES ──────────────────────────────────────────────────────────── -->
+{% if nuevos %}
+<section class="py-5">
+  <div class="container">
+    <div class="section-header d-flex justify-content-between align-items-end mb-4">
+      <div>
+        <p class="section-label">Recién llegado</p>
+        <h2 class="section-title">Lo más <em>Nuevo</em></h2>
+      </div>
+      <a href="{{ url_for('tienda.productos', orden='nuevo') }}" class="btn-ver-mas">Ver todos <i class="bi bi-arrow-right"></i></a>
+    </div>
+    <div class="row g-3">
+      {% for prod in nuevos %}
+      <div class="col-6 col-md-4 col-lg-3">{% include 'tienda/_tarjeta_producto.html' %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── BENEFICIOS ─────────────────────────────────────────────────────────── -->
+<section class="py-5" style="background:rgba(165,54,148,.03)">
+  <div class="container">
+    <div class="row g-4 text-center">
+      <div class="col-6 col-md-3"><div class="beneficio-card"><i class="bi bi-truck fs-2"></i><h6 class="mt-2 fw-bold">Envío a domicilio</h6><small class="text-muted">Delivery en Huancayo</small></div></div>
+      <div class="col-6 col-md-3"><div class="beneficio-card"><i class="bi bi-shield-check fs-2"></i><h6 class="mt-2 fw-bold">Compra segura</h6><small class="text-muted">Pago 100% protegido</small></div></div>
+      <div class="col-6 col-md-3"><div class="beneficio-card"><i class="bi bi-arrow-repeat fs-2"></i><h6 class="mt-2 fw-bold">Cambios fáciles</h6><small class="text-muted">Si no te queda, lo cambiamos</small></div></div>
+      <div class="col-6 col-md-3"><div class="beneficio-card"><i class="bi bi-headset fs-2"></i><h6 class="mt-2 fw-bold">Atención al cliente</h6><small class="text-muted">Siempre disponibles</small></div></div>
+    </div>
+  </div>
+</section>
+{% endblock %}

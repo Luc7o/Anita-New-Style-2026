@@ -1,0 +1,163 @@
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Dashboard{% endblock %}
+{% block topbar_titulo %}Dashboard{% endblock %}
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block contenido %}
+
+<!-- ── KPI Cards ────────────────────────────────────────────────────────────── -->
+<div class="row g-4 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-ventas">
+      <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
+      <div class="kpi-info">
+        <p class="kpi-label">Ventas totales</p>
+        <h3 class="kpi-valor">S/ {{ "%.2f"|format(total_ventas) }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-pedidos">
+      <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
+      <div class="kpi-info">
+        <p class="kpi-label">Total pedidos</p>
+        <h3 class="kpi-valor">{{ total_pedidos }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-clientes">
+      <div class="kpi-icon"><i class="bi bi-people"></i></div>
+      <div class="kpi-info">
+        <p class="kpi-label">Clientes registrados</p>
+        <h3 class="kpi-valor">{{ total_clientes }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="kpi-card kpi-productos">
+      <div class="kpi-icon"><i class="bi bi-box-seam"></i></div>
+      <div class="kpi-info">
+        <p class="kpi-label">Productos activos</p>
+        <h3 class="kpi-valor">{{ total_productos }}</h3>
+        {% if sin_stock > 0 %}
+        <small class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>{{ sin_stock }} sin stock</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <!-- Gráfico ventas por categoría -->
+  <div class="col-lg-5">
+    <div class="admin-card h-100">
+      <h6 class="admin-card-title"><i class="bi bi-pie-chart me-2"></i>Ventas por categoría</h6>
+      <canvas id="graficoCat" height="280"></canvas>
+    </div>
+  </div>
+  <!-- Accesos rápidos -->
+  <div class="col-lg-7">
+    <div class="admin-card h-100">
+      <h6 class="admin-card-title"><i class="bi bi-lightning me-2"></i>Accesos rápidos</h6>
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <a href="{{ url_for('admin.nuevo_producto') }}" class="acceso-rapido">
+            <i class="bi bi-plus-circle fs-2"></i><span>Nuevo producto</span>
+          </a>
+        </div>
+        <div class="col-6 col-md-3">
+          <a href="{{ url_for('admin.pedidos', estado='pendiente') }}" class="acceso-rapido">
+            <i class="bi bi-clock fs-2"></i><span>Pedidos pendientes</span>
+          </a>
+        </div>
+        <div class="col-6 col-md-3">
+          <a href="{{ url_for('admin.clientes') }}" class="acceso-rapido">
+            <i class="bi bi-person-plus fs-2"></i><span>Ver clientes</span>
+          </a>
+        </div>
+        <div class="col-6 col-md-3">
+          <a href="{{ url_for('admin.categorias') }}" class="acceso-rapido">
+            <i class="bi bi-tags fs-2"></i><span>Categorías</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Últimos pedidos ─────────────────────────────────────────────────────── -->
+<div class="admin-card">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="admin-card-title mb-0"><i class="bi bi-receipt me-2"></i>Últimos pedidos</h6>
+    <a href="{{ url_for('admin.pedidos') }}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-admin table-hover">
+      <thead><tr><th>#Pedido</th><th>Cliente</th><th>Total</th><th>Método</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
+      <tbody>
+      {% for p in ultimos_pedidos %}
+      <tr>
+        <td><code>{{ p.numero_pedido }}</code></td>
+        <td>{{ p.cliente.nombre_completo }}</td>
+        <td><strong>{{ p.total | moneda }}</strong></td>
+        <td>{{ p.metodo_pago_label }}</td>
+        <td><span class="badge-estado {{ p.estado }}">{{ p.estado_label }}</span></td>
+        <td class="text-muted small">{{ p.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td><a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn btn-xs btn-outline-secondary">Ver</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const labCat = {{ ventas_cat | map(attribute=0) | list | tojson }};
+const datCat = {{ ventas_cat | map(attribute=1) | list | tojson }};
+if (labCat.length) {
+  new Chart(document.getElementById('graficoCat'), {
+    type: 'doughnut',
+    data: {
+      labels: labCat,
+      datasets: [{ data: datCat,
+        backgroundColor: ['#c8956c','#e8b89a','#8b4513','#d4a574','#f0d0b0'],
+        borderWidth: 2 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+} else {
+  document.getElementById('graficoCat').parentElement.innerHTML = '<p class="text-muted text-center py-4">Sin datos de ventas aún.</p>';
+}
+</script>
+{% endblock %}
+
+<!-- Widget consulta rápida DNI / RUC -->
+<div class="admin-card mt-4">
+  <h6 class="admin-card-title"><i class="bi bi-person-vcard me-2"></i>Consulta rápida DNI / RUC</h6>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Consultar DNI</label>
+      <div style="position:relative">
+        <input type="text" id="dni" class="form-control" data-tipo="dni"
+               placeholder="Ingresa 8 dígitos..." maxlength="8">
+        <div class="dni-badge"></div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Consultar RUC</label>
+      <div style="position:relative">
+        <input type="text" id="ruc" class="form-control" data-tipo="ruc"
+               placeholder="Ingresa 11 dígitos..." maxlength="11">
+        <div class="dni-badge"></div>
+      </div>
+    </div>
+  </div>
+  <small class="text-muted mt-2 d-block">
+    <i class="bi bi-info-circle me-1"></i>
+    Escribe el número completo para que la consulta se realice automáticamente.
+  </small>
+</div>

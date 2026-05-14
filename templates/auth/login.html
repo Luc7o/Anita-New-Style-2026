@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block titulo %}Iniciar sesión{% endblock %}
+{% block contenido %}
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-header text-center">
+      <h3 class="brand-logo mb-1">
+        <span class="brand-anita">ANITA</span><span class="brand-ns"> NEW STYLE</span>
+      </h3>
+      <p class="text-muted mt-1 small">Inicia sesión en tu cuenta</p>
+    </div>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.email.label(class="form-label-ans") }}
+        {{ form.email(class="form-control form-control-ans" + (" is-invalid" if form.email.errors else ""), placeholder="tucorreo@gmail.com") }}
+        {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="mb-3">
+        {{ form.password.label(class="form-label-ans") }}
+        <div class="input-password-wrap">
+          {{ form.password(class="form-control form-control-ans" + (" is-invalid" if form.password.errors else ""), id="password", placeholder="Tu contraseña") }}
+          <button type="button" class="btn-ver-pass" onclick="togglePass()">
+            <i class="bi bi-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+        {% for e in form.password.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+      </div>
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+          {{ form.recordar(class="form-check-input") }}
+          {{ form.recordar.label(class="form-check-label") }}
+        </div>
+      </div>
+      {{ form.submit(class="btn btn-ans w-100 btn-lg") }}
+    </form>
+    <p class="text-center mt-4 text-muted small">
+      ¿No tienes cuenta? <a href="{{ url_for('auth.registro') }}" class="link-ans">Regístrate gratis</a>
+    </p>
+  </div>
+</div>
+<script>
+function togglePass() {
+  const p = document.getElementById('password');
+  const i = document.getElementById('eyeIcon');
+  p.type === 'password' ? (p.type='text', i.className='bi bi-eye-slash') : (p.type='password', i.className='bi bi-eye');
+}
+</script>
+{% endblock %}

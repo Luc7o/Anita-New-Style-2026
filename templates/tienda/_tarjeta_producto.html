@@ -1,0 +1,26 @@
+<div class="producto-card">
+  {% if prod.tiene_oferta %}<span class="badge-oferta">-{{ prod.descuento_porcentaje }}%</span>{% endif %}
+  {% if prod.es_nuevo and not prod.tiene_oferta %}<span class="badge-nuevo">Nuevo</span>{% endif %}
+  <a href="{{ url_for('tienda.detalle_producto', id=prod.id) }}" class="producto-img-link">
+    <img src="{{ url_for('static', filename='img/productos/' + prod.imagen_principal) }}"
+         alt="{{ prod.nombre }}" class="producto-img" loading="lazy"
+         onerror="this.src='{{ url_for('static', filename='img/no-imagen.png') }}'">
+  </a>
+  <div class="producto-info">
+    <p class="producto-categoria">{{ prod.categoria_rel.nombre }}</p>
+    <h6 class="producto-nombre"><a href="{{ url_for('tienda.detalle_producto', id=prod.id) }}">{{ prod.nombre }}</a></h6>
+    <div class="producto-precio">
+      <span class="precio-actual">{{ prod.precio_final | moneda }}</span>
+      {% if prod.tiene_oferta %}
+      <span class="precio-original">{{ prod.precio | moneda }}</span>
+      {% endif %}
+    </div>
+    <form action="{{ url_for('carrito.agregar', producto_id=prod.id) }}" method="post" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="cantidad" value="1">
+      <button type="submit" class="btn btn-agregar w-100">
+        <i class="bi bi-bag-plus me-1"></i> Agregar
+      </button>
+    </form>
+  </div>
+</div>

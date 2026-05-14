@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block titulo %}Mi perfil{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- Sidebar perfil -->
+    <div class="col-lg-3">
+      <div class="perfil-sidebar">
+        <div class="perfil-avatar text-center mb-3">
+          <div class="avatar-circle">{{ current_user.nombre[0] }}{{ current_user.apellido[0] }}</div>
+          <h5 class="mt-2 mb-0">{{ current_user.nombre_completo }}</h5>
+          <small class="text-muted">{{ current_user.email }}</small>
+        </div>
+        <nav class="perfil-nav">
+          <a href="{{ url_for('perfil.perfil') }}" class="perfil-nav-link active"><i class="bi bi-person me-2"></i>Mi perfil</a>
+          <a href="{{ url_for('perfil.editar') }}" class="perfil-nav-link"><i class="bi bi-pencil me-2"></i>Editar perfil</a>
+          <a href="{{ url_for('pedidos.mis_pedidos') }}" class="perfil-nav-link"><i class="bi bi-box-seam me-2"></i>Mis pedidos</a>
+          <a href="{{ url_for('perfil.cambiar_password') }}" class="perfil-nav-link"><i class="bi bi-key me-2"></i>Cambiar contraseña</a>
+          <a href="{{ url_for('auth.logout') }}" class="perfil-nav-link text-danger"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a>
+        </nav>
+      </div>
+    </div>
+    <!-- Contenido -->
+    <div class="col-lg-9">
+      <div class="perfil-card">
+        <h4 class="perfil-card-title">Información personal</h4>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label-ans">Nombre completo</label><p class="perfil-dato">{{ current_user.nombre_completo }}</p></div>
+          <div class="col-md-6"><label class="form-label-ans">Correo electrónico</label><p class="perfil-dato">{{ current_user.email }}</p></div>
+          <div class="col-md-6"><label class="form-label-ans">Teléfono</label><p class="perfil-dato">{{ current_user.telefono or '—' }}</p></div>
+          <div class="col-md-6"><label class="form-label-ans">DNI</label><p class="perfil-dato">{{ current_user.dni or '—' }}</p></div>
+        </div>
+        <h5 class="perfil-card-title mt-4">Dirección principal</h5>
+        <div class="row g-3">
+          <div class="col-12"><label class="form-label-ans">Dirección</label><p class="perfil-dato">{{ current_user.direccion or '—' }}</p></div>
+          <div class="col-md-4"><label class="form-label-ans">Distrito</label><p class="perfil-dato">{{ current_user.distrito or '—' }}</p></div>
+          <div class="col-md-4"><label class="form-label-ans">Provincia</label><p class="perfil-dato">{{ current_user.provincia or '—' }}</p></div>
+          <div class="col-md-4"><label class="form-label-ans">Departamento</label><p class="perfil-dato">{{ current_user.departamento or '—' }}</p></div>
+        </div>
+        <div class="mt-4">
+          <a href="{{ url_for('perfil.editar') }}" class="btn btn-ans"><i class="bi bi-pencil me-2"></i>Editar información</a>
+        </div>
+      </div>
+      <!-- Estadísticas -->
+      <div class="row g-3 mt-2">
+        <div class="col-md-4"><div class="stat-card text-center"><i class="bi bi-box-seam fs-2 text-accent"></i><h4>{{ current_user.total_pedidos }}</h4><p>Pedidos realizados</p></div></div>
+        <div class="col-md-4"><div class="stat-card text-center"><i class="bi bi-calendar fs-2 text-accent"></i><h4>{{ current_user.fecha_registro.strftime('%b %Y') }}</h4><p>Cliente desde</p></div></div>
+        <div class="col-md-4"><div class="stat-card text-center"><a href="{{ url_for('pedidos.mis_pedidos') }}" class="btn btn-ans w-100 mt-3">Ver mis pedidos</a></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

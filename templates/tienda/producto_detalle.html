@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block titulo %}{{ producto.nombre }}{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb breadcrumb-ans">
+      <li class="breadcrumb-item"><a href="{{ url_for('tienda.inicio') }}">Inicio</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('tienda.productos', categoria=producto.categoria_rel.slug) }}">{{ producto.categoria_rel.nombre }}</a></li>
+      <li class="breadcrumb-item active">{{ producto.nombre }}</li>
+    </ol>
+  </nav>
+  <div class="row g-5">
+    <!-- Galería -->
+    <div class="col-lg-6">
+      <div class="galeria-principal mb-3">
+        <img src="{{ url_for('static', filename='img/productos/' + producto.imagen_principal) }}"
+             alt="{{ producto.nombre }}" class="img-fluid rounded-ans" id="imgPrincipal"
+             onerror="this.src='{{ url_for('static', filename='img/no-imagen.png') }}'">
+        {% if producto.tiene_oferta %}<span class="badge-oferta-lg">-{{ producto.descuento_porcentaje }}%</span>{% endif %}
+      </div>
+      {% if producto.imagenes.count() > 0 %}
+      <div class="galeria-miniaturas d-flex gap-2 flex-wrap">
+        {% for img in producto.imagenes %}
+        <img src="{{ url_for('static', filename='img/productos/' + img.url) }}"
+             alt="" class="miniatura" onclick="document.getElementById('imgPrincipal').src=this.src">
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <!-- Info -->
+    <div class="col-lg-6">
+      <p class="text-accent-light mb-1">{{ producto.categoria_rel.nombre }}</p>
+      <h1 class="detalle-nombre">{{ producto.nombre }}</h1>
+      {% if producto.sku %}<p class="text-muted small">SKU: {{ producto.sku }}</p>{% endif %}
+      <!-- Precio -->
+      <div class="detalle-precio my-3">
+        <span class="precio-grande">{{ producto.precio_final | moneda }}</span>
+        {% if producto.tiene_oferta %}
+        <span class="precio-tachado ms-2">{{ producto.precio | moneda }}</span>
+        <span class="badge-ahorro ms-2">Ahorras {{ (producto.precio - producto.precio_oferta) | moneda }}</span>
+        {% endif %}
+      </div>
+      <!-- Stock -->
+      <div class="mb-3">
+        {% if producto.stock > 0 %}
+        <span class="badge bg-success-soft"><i class="bi bi-check-circle me-1"></i>En stock ({{ producto.stock }} disponibles)</span>
+        {% else %}
+        <span class="badge bg-danger-soft"><i class="bi bi-x-circle me-1"></i>Sin stock</span>
+        {% endif %}
+      </div>
+      <!-- Descripción -->
+      {% if producto.descripcion %}
+      <p class="detalle-desc">{{ producto.descripcion }}</p>{% endif %}
+      <!-- Formulario agregar -->
+      <form action="{{ url_for('carrito.agregar', producto_id=producto.id) }}" method="post" class="detalle-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <!-- Tallas -->
+        {% if producto.tallas_lista %}
+        <div class="mb-3">
+          <label class="form-label-ans">Talla <span class="text-danger">*</span></label>
+          <div class="tallas-selector d-flex gap-2 flex-wrap">
+            {% for talla in producto.tallas_lista %}
+            <input type="radio" name="talla" id="talla_{{ talla }}" value="{{ talla }}" class="talla-input" required>
+            <label for="talla_{{ talla }}" class="talla-btn">{{ talla }}</label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <!-- Colores -->
+        {% if producto.colores_lista %}
+        <div class="mb-3">
+          <label class="form-label-ans">Color <span class="text-danger">*</span></label>
+          <div class="colores-selector d-flex gap-2 flex-wrap">
+            {% for color in producto.colores_lista %}
+            <input type="radio" name="color" id="color_{{ loop.index }}" value="{{ color }}" class="color-input" required>
+            <label for="color_{{ loop.index }}" class="color-label-btn">{{ color }}</label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <!-- Cantidad -->
+        <div class="mb-4 d-flex align-items-center gap-3">
+          <label class="form-label-ans mb-0">Cantidad:</label>
+          <div class="cantidad-control d-flex align-items-center">
+            <button type="button" class="btn-qty" onclick="cambiarCantidad(-1)">−</button>
+            <input type="number" name="cantidad" id="cantidad" value="1" min="1" max="{{ producto.stock }}" class="input-qty">
+            <button type="button" class="btn-qty" onclick="cambiarCantidad(1)">+</button>
+          </div>
+        </div>
+        <div class="d-flex gap-3">
+          <button type="submit" class="btn btn-ans btn-lg flex-grow-1" {{ 'disabled' if producto.stock <= 0 }}>
+            <i class="bi bi-bag-plus me-2"></i>Agregar al carrito
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Productos relacionados -->
+  {% if relacionados %}
+  <div class="mt-5 pt-4 border-top">
+    <h4 class="section-title mb-4">También te puede gustar</h4>
+    <div class="row g-3">
+      {% for prod in relacionados %}
+      <div class="col-6 col-md-3">{% include 'tienda/_tarjeta_producto.html' %}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+<script>
+function cambiarCantidad(delta) {
+  const inp = document.getElementById('cantidad');
+  const max = parseInt(inp.max) || 99;
+  let val = parseInt(inp.value) + delta;
+  inp.value = Math.max(1, Math.min(max, val));
+}
+</script>
+{% endblock %}

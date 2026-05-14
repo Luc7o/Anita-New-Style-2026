@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block titulo %}{{ categoria_sel.nombre if categoria_sel else 'Todos los productos' }}{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <div class="row g-4">
+    <!-- Sidebar filtros -->
+    <div class="col-lg-3">
+      <div class="filtros-panel">
+        <h5 class="filtros-title"><i class="bi bi-funnel me-2"></i>Filtrar</h5>
+        <form method="get">
+          {% if request.args.get('q') %}<input type="hidden" name="q" value="{{ request.args.get('q') }}">{% endif %}
+          <div class="mb-3">
+            <label class="form-label-ans">Categoría</label>
+            {% for cat in categorias %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="categoria" value="{{ cat.slug }}" id="cat_{{ cat.id }}"
+                {{ 'checked' if categoria_sel and categoria_sel.id == cat.id }}>
+              <label class="form-check-label" for="cat_{{ cat.id }}">{{ cat.nombre }}</label>
+            </div>
+            {% endfor %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="categoria" value="" id="cat_todas" {{ 'checked' if not categoria_sel }}>
+              <label class="form-check-label" for="cat_todas">Todas</label>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label-ans">Precio (S/)</label>
+            <div class="d-flex gap-2">
+              <input type="number" name="precio_min" class="form-control form-control-sm" placeholder="Mín" value="{{ precio_min or '' }}">
+              <input type="number" name="precio_max" class="form-control form-control-sm" placeholder="Máx" value="{{ precio_max or '' }}">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-ans w-100 btn-sm">Aplicar filtros</button>
+          <a href="{{ url_for('tienda.productos') }}" class="btn btn-outline-secondary w-100 btn-sm mt-2">Limpiar</a>
+        </form>
+      </div>
+    </div>
+    <!-- Productos -->
+    <div class="col-lg-9">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h4 class="mb-0">{{ categoria_sel.nombre if categoria_sel else 'Todos los productos' }}
+          <small class="text-muted fs-6">({{ productos.total }})</small>
+        </h4>
+        <select class="form-select form-select-sm w-auto" onchange="location=this.value">
+          <option value="{{ url_for('tienda.productos', orden='nuevo', categoria=request.args.get('categoria','')) }}" {{ 'selected' if orden=='nuevo' }}>Más nuevos</option>
+          <option value="{{ url_for('tienda.productos', orden='popular', categoria=request.args.get('categoria','')) }}" {{ 'selected' if orden=='popular' }}>Más vendidos</option>
+          <option value="{{ url_for('tienda.productos', orden='precio_asc', categoria=request.args.get('categoria','')) }}" {{ 'selected' if orden=='precio_asc' }}>Precio: menor a mayor</option>
+          <option value="{{ url_for('tienda.productos', orden='precio_desc', categoria=request.args.get('categoria','')) }}" {{ 'selected' if orden=='precio_desc' }}>Precio: mayor a menor</option>
+        </select>
+      </div>
+      {% if productos.items %}
+      <div class="row g-3">
+        {% for prod in productos.items %}
+        <div class="col-6 col-md-4">{% include 'tienda/_tarjeta_producto.html' %}</div>
+        {% endfor %}
+      </div>
+      <!-- Paginación -->
+      {% if productos.pages > 1 %}
+      <nav class="mt-5 d-flex justify-content-center">
+        <ul class="pagination pagination-ans">
+          {% for p in productos.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if p %}
+          <li class="page-item {{ 'active' if p == productos.page }}">
+            <a class="page-link" href="{{ url_for('tienda.productos', pagina=p, categoria=request.args.get('categoria',''), orden=orden) }}">{{ p }}</a>
+          </li>
+          {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </nav>
+      {% endif %}
+      {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-bag-x fs-1 text-muted"></i>
+        <p class="mt-3 text-muted">No se encontraron productos.</p>
+        <a href="{{ url_for('tienda.productos') }}" class="btn btn-ans">Ver todos</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block titulo %}Pedido {{ pedido.numero_pedido }}{% endblock %}
+{% block contenido %}
+<div class="container py-5" style="max-width:800px">
+  <div class="perfil-card">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div><h4>Pedido <strong>#{{ pedido.numero_pedido }}</strong></h4>
+      <small class="text-muted">{{ pedido.fecha_creacion.strftime('%d de %B del %Y, %H:%M') }}</small></div>
+      <span class="badge-estado {{ pedido.estado }} fs-6">{{ pedido.estado_label }}</span>
+    </div>
+    <!-- Productos -->
+    {% for det in pedido.detalles %}
+    <div class="detalle-item d-flex gap-3 mb-3">
+      <img src="{{ url_for('static', filename='img/productos/' + det.producto.imagen_principal) }}" class="detalle-img" onerror="this.src='{{ url_for('static', filename='img/no-imagen.png') }}'">
+      <div class="flex-grow-1">
+        <strong>{{ det.producto.nombre }}</strong>
+        <p class="text-muted small mb-0">{% if det.talla %}Talla: {{ det.talla }}{% endif %} {% if det.color %}| Color: {{ det.color }}{% endif %}</p>
+        <p class="mb-0">{{ det.precio_unit | moneda }} × {{ det.cantidad }}</p>
+      </div>
+      <div class="text-end"><strong>{{ det.subtotal | moneda }}</strong></div>
+    </div>
+    {% endfor %}
+    <hr>
+    <div class="row">
+      <div class="col-md-6">
+        <h6>Datos de entrega</h6>
+        <p class="mb-1">{{ pedido.envio_nombre }} · {{ pedido.envio_telefono }}</p>
+        {% if pedido.tipo_entrega == 'delivery' %}<p class="mb-1 text-muted small">{{ pedido.envio_direccion }}, {{ pedido.envio_distrito }}, {{ pedido.envio_provincia }}</p>{% else %}<p class="text-muted small">Recojo en tienda</p>{% endif %}
+      </div>
+      <div class="col-md-6 text-md-end">
+        <div class="resumen-linea"><span>Subtotal</span><span>{{ pedido.subtotal | moneda }}</span></div>
+        <div class="resumen-linea"><span>Envío</span><span>{{ pedido.costo_envio | moneda }}</span></div>
+        <div class="resumen-total"><span>Total</span><span>{{ pedido.total | moneda }}</span></div>
+      </div>
+    </div>
+    <a href="{{ url_for('pedidos.mis_pedidos') }}" class="btn btn-outline-ans mt-3"><i class="bi bi-arrow-left me-1"></i>Mis pedidos</a>
+  </div>
+</div>
+{% endblock %}

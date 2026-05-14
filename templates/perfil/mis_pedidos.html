@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titulo %}Mis pedidos{% endblock %}
+{% block contenido %}
+<div class="container py-5">
+  <h2 class="page-title mb-4"><i class="bi bi-box-seam me-2"></i>Mis pedidos</h2>
+  {% if pedidos.items %}
+  <div class="table-responsive">
+    <table class="table table-ans">
+      <thead><tr><th>#Pedido</th><th>Fecha</th><th>Total</th><th>Pago</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for p in pedidos.items %}
+      <tr>
+        <td><strong>{{ p.numero_pedido }}</strong></td>
+        <td>{{ p.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</td>
+        <td><strong>{{ p.total | moneda }}</strong></td>
+        <td>{{ p.metodo_pago_label }}</td>
+        <td><span class="badge-estado {{ p.estado }}">{{ p.estado_label }}</span></td>
+        <td><a href="{{ url_for('pedidos.detalle_pedido', numero=p.numero_pedido) }}" class="btn btn-sm btn-outline-ans">Ver detalle</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5">
+    <i class="bi bi-box display-1 text-muted"></i>
+    <p class="mt-3">Aún no tienes pedidos.</p>
+    <a href="{{ url_for('tienda.productos') }}" class="btn btn-ans">Ir a la tienda</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "admin/base_admin.html" %}
+{% block titulo %}Pedido {{ pedido.numero_pedido }}{% endblock %}
+{% block topbar_titulo %}Detalle del Pedido{% endblock %}
+{% block contenido %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <!-- Productos del pedido -->
+    <div class="admin-card mb-4">
+      <h6 class="admin-card-title"><i class="bi bi-bag me-2"></i>Productos</h6>
+      {% for det in pedido.detalles %}
+      <div class="d-flex gap-3 align-items-center mb-3 pb-3 border-bottom">
+        <img src="{{ url_for('static', filename='img/productos/' + det.producto.imagen_principal) }}"
+             class="admin-prod-thumb" onerror="this.src='{{ url_for('static', filename='img/no-imagen.png') }}'">
+        <div class="flex-grow-1">
+          <strong>{{ det.producto.nombre }}</strong>
+          <p class="mb-0 text-muted small">
+            {% if det.talla %}Talla: {{ det.talla }}{% endif %}
+            {% if det.color %}| Color: {{ det.color }}{% endif %}
+          </p>
+          <p class="mb-0">{{ det.precio_unit | moneda }} × {{ det.cantidad }}</p>
+        </div>
+        <strong>{{ det.subtotal | moneda }}</strong>
+      </div>
+      {% endfor %}
+      <div class="text-end mt-2">
+        <p class="mb-1">Subtotal: {{ pedido.subtotal | moneda }}</p>
+        <p class="mb-1">Envío: {{ pedido.costo_envio | moneda }}</p>
+        <h5>Total: <strong class="text-accent">{{ pedido.total | moneda }}</strong></h5>
+      </div>
+    </div>
+    <!-- Datos del cliente -->
+    <div class="admin-card">
+      <h6 class="admin-card-title"><i class="bi bi-person me-2"></i>Datos del cliente y entrega</h6>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Cliente:</strong> {{ pedido.cliente.nombre_completo }}</p>
+          <p class="mb-1"><strong>Email:</strong> {{ pedido.cliente.email }}</p>
+          <p class="mb-1"><strong>Teléfono entrega:</strong> {{ pedido.envio_telefono }}</p>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Tipo entrega:</strong> {{ pedido.TIPOS_ENTREGA.get(pedido.tipo_entrega) }}</p>
+          {% if pedido.tipo_entrega == 'delivery' %}
+          <p class="mb-1"><strong>Dirección:</strong> {{ pedido.envio_direccion }}</p>
+          <p class="mb-1"><strong>Distrito:</strong> {{ pedido.envio_distrito }}, {{ pedido.envio_provincia }}</p>
+          {% endif %}
+          {% if pedido.nota %}<p class="mb-1"><strong>Nota:</strong> {{ pedido.nota }}</p>{% endif %}
+        </div>
+      </div>
+      <!-- Comprobante Yape -->
+      {% if pedido.comprobante_yape %}
+      <div class="mt-3">
+        <p class="mb-1"><strong>Comprobante Yape:</strong></p>
+        <img src="{{ url_for('static', filename='img/productos/' + pedido.comprobante_yape) }}" class="img-thumbnail" style="max-height:300px">
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Panel lateral estado -->
+  <div class="col-lg-4">
+    <div class="admin-card mb-4">
+      <h6 class="admin-card-title">Estado del pedido</h6>
+      <div class="mb-3">
+        <p class="mb-1">Estado actual: <span class="badge-estado {{ pedido.estado }}">{{ pedido.estado_label }}</span></p>
+        <p class="mb-0">Pago: {% if pedido.estado_pago == 'pagado' %}<span class="badge bg-success">Pagado</span>{% elif pedido.estado_pago == 'pendiente' %}<span class="badge bg-warning text-dark">Pendiente</span>{% else %}<span class="badge bg-danger">{{ pedido.estado_pago_label }}</span>{% endif %}</p>
+      </div>
+      <form action="{{ url_for('admin.cambiar_estado', id=pedido.id) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-2">
+          <label class="form-label">Cambiar estado:</label>
+          <select name="estado" class="form-select form-select-sm">
+            {% for key, label in pedido.ESTADOS.items() %}
+            <option value="{{ key }}" {{ 'selected' if pedido.estado == key }}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-admin-primary w-100 btn-sm">Actualizar estado</button>
+      </form>
+    </div>
+    <div class="admin-card">
+      <h6 class="admin-card-title">Información de pago</h6>
+      <p class="mb-1"><strong>Método:</strong> {{ pedido.metodo_pago_label }}</p>
+      <p class="mb-1"><strong>Estado:</strong> {{ pedido.estado_pago_label }}</p>
+      {% if pedido.stripe_id %}<p class="mb-1"><small class="text-muted">Stripe ID: {{ pedido.stripe_id }}</small></p>{% endif %}
+      <p class="mb-1"><strong>Fecha pedido:</strong> {{ pedido.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+    </div>
+    <a href="{{ url_for('admin.pedidos') }}" class="btn btn-outline-secondary w-100 mt-3"><i class="bi bi-arrow-left me-1"></i>Volver a pedidos</a>
+  </div>
+</div>
+{% endblock %}

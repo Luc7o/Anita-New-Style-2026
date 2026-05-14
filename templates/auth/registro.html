@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta{% endblock %}
+{% block contenido %}
+<div class="auth-page">
+  <div class="auth-card auth-card-lg">
+    <div class="auth-header text-center">
+      <h3 class="brand-logo mb-1">
+        <span class="brand-anita">ANITA</span><span class="brand-ns"> NEW STYLE</span>
+      </h3>
+      <p class="text-muted mt-1 small">Crea tu cuenta y empieza a comprar</p>
+    </div>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="row g-3">
+
+        <!-- DNI con auto-completado -->
+        <div class="col-12">
+          <label class="form-label-ans">
+            DNI <span style="color:rgba(255,255,255,.5);font-size:.75rem;">(se completará tu nombre automáticamente)</span>
+          </label>
+          <div style="position:relative">
+            <input type="text" id="dni" name="dni" class="form-control form-control-ans"
+                   data-tipo="dni" placeholder="12345678" maxlength="8">
+            <div class="dni-badge"></div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          {{ form.nombre.label(class="form-label-ans") }}
+          {{ form.nombre(class="form-control form-control-ans" + (" is-invalid" if form.nombre.errors else ""), placeholder="Tu nombre") }}
+          {% for e in form.nombre.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          {{ form.apellido.label(class="form-label-ans") }}
+          {{ form.apellido(class="form-control form-control-ans" + (" is-invalid" if form.apellido.errors else ""), placeholder="Tu apellido") }}
+          {% for e in form.apellido.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          {{ form.email.label(class="form-label-ans") }}
+          {{ form.email(class="form-control form-control-ans" + (" is-invalid" if form.email.errors else ""), placeholder="tucorreo@gmail.com") }}
+          {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          {{ form.telefono.label(class="form-label-ans") }}
+          {{ form.telefono(class="form-control form-control-ans", placeholder="999 999 999") }}
+        </div>
+        <div class="col-md-6">
+          {{ form.password.label(class="form-label-ans") }}
+          {{ form.password(class="form-control form-control-ans" + (" is-invalid" if form.password.errors else ""), placeholder="Mínimo 6 caracteres") }}
+          {% for e in form.password.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          {{ form.password2.label(class="form-label-ans") }}
+          {{ form.password2(class="form-control form-control-ans" + (" is-invalid" if form.password2.errors else ""), placeholder="Repite la contraseña") }}
+          {% for e in form.password2.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+        </div>
+        <div class="col-12 mt-2">
+          {{ form.submit(class="btn btn-ans w-100 btn-lg") }}
+        </div>
+      </div>
+    </form>
+    <p class="text-center mt-4 text-muted small">
+      ¿Ya tienes cuenta? <a href="{{ url_for('auth.login') }}" class="link-ans">Inicia sesión</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
