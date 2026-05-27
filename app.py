@@ -3,8 +3,11 @@ from flask import Flask, render_template
 from config import config
 from app_extensions import db, login, mail, migrate, csrf
 
+
 def create_app(env=None):
     app = Flask(__name__)
+
+    # Configuración del entorno
     env = env or os.environ.get('FLASK_ENV', 'development')
     app.config.from_object(config.get(env, config['default']))
 
@@ -20,41 +23,49 @@ def create_app(env=None):
 
     # User loader
     from models.usuario import Usuario
+
     @login.user_loader
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
 
     # Blueprints
-    from routes.auth    import bp as auth_bp
-    from routes.tienda  import bp as tienda_bp
+    from routes.auth import bp as auth_bp
+    from routes.tienda import bp as tienda_bp
     from routes.carrito import bp as carrito_bp
     from routes.pedidos import bp as pedidos_bp
-    from routes.perfil  import bp as perfil_bp
-    from routes.admin   import bp as admin_bp
-    from routes.api     import bp as api_bp
-    csrf.exempt(api_bp)   # Las rutas /api/ son GET públicas, no necesitan CSRF
+    from routes.perfil import bp as perfil_bp
+    from routes.admin import bp as admin_bp
+    from routes.api import bp as api_bp
 
-    app.register_blueprint(auth_bp,    url_prefix='/auth')
+    csrf.exempt(api_bp)
+
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(tienda_bp)
     app.register_blueprint(carrito_bp, url_prefix='/carrito')
     app.register_blueprint(pedidos_bp, url_prefix='/pedidos')
-    app.register_blueprint(perfil_bp,  url_prefix='/perfil')
-    app.register_blueprint(admin_bp,   url_prefix='/admin')
-    app.register_blueprint(api_bp,     url_prefix='/api')
+    app.register_blueprint(perfil_bp, url_prefix='/perfil')
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(api_bp, url_prefix='/api')
 
-    # Context processors
+    # Context processor
     @app.context_processor
     def inyectar_globales():
         from models.producto import Categoria
-        from models.carrito  import ItemCarrito
-        from flask_login     import current_user
+        from models.carrito import ItemCarrito
+        from flask_login import current_user
+
         categorias = Categoria.query.filter_by(activo=True).all()
+
         cant_carrito = 0
         if current_user.is_authenticated:
             cant_carrito = ItemCarrito.query.filter_by(usuario_id=current_user.id).count()
-        return dict(categorias=categorias, cant_carrito=cant_carrito,
-                    YAPE_NUMERO=app.config['YAPE_NUMERO'],
-                    STRIPE_PUBLIC_KEY=app.config['STRIPE_PUBLIC_KEY'])
+
+        return dict(
+            categorias=categorias,
+            cant_carrito=cant_carrito,
+            YAPE_NUMERO=app.config['YAPE_NUMERO'],
+            STRIPE_PUBLIC_KEY=app.config['STRIPE_PUBLIC_KEY']
+        )
 
     # Filtros Jinja
     @app.template_filter('moneda')
@@ -71,3 +82,9 @@ def create_app(env=None):
         return render_template('errores/500.html'), 500
 
     return app
+
+
+# 🚀 ARRANQUE CORRECTO
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True)
