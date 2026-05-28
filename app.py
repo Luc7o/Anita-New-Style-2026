@@ -70,7 +70,15 @@ def create_app(env=None):
     # Filtros Jinja
     @app.template_filter('moneda')
     def filtro_moneda(valor):
-        return f"S/ {float(valor):.2f}"
+        return f"S/ {float(valor or 0):.2f}"
+
+    @app.template_filter('fecha_hora')
+    def filtro_fecha_hora(dt):
+        return dt.strftime('%d/%m/%Y %H:%M') if dt else '—'
+
+    @app.template_filter('fecha_corta')
+    def filtro_fecha_corta(dt):
+        return dt.strftime('%d/%m/%Y') if dt else '—'
 
     # Errores
     @app.errorhandler(404)
