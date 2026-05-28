@@ -4,8 +4,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from app_extensions import db
 from models.usuario import Usuario
-from forms.auth_forms import FormLogin, FormRegistro, Form2FA
-from utils.email_2fa import enviar_codigo_2fa
+from forms.auth_forms import FormLogin, FormRegistro, Form2FA, FormOlvidePassword, FormRestablecerPassword
+from utils.email_2fa import enviar_codigo_2fa, enviar_recuperacion_password
 
 bp = Blueprint('auth', __name__)
 
@@ -127,6 +127,51 @@ def registro():
         return redirect(url_for('tienda.inicio'))
 
     return render_template('auth/registro.html', form=form)
+
+
+@bp.route('/olvide-password', methods=['GET', 'POST'])
+def olvide_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('tienda.inicio'))
+
+    form = FormOlvidePassword()
+    enviado = False
+    email_enviado = None
+
+    if form.validate_on_submit():
+        email = form.email.data.lower().strip()
+        usuario = Usuario.query.filter_by(email=email).first()
+        email_enviado = email
+        enviado = True
+        # Enviamos el correo solo si el usuario existe (pero no revelamos si existe o no)
+        if usuario:
+            token = usuario.generar_token_reset_password()
+            db.session.commit()
+            enviar_recuperacion_password(usuario, token)
+
+    return render_template('auth/olvide_password.html', form=form,
+                           enviado=enviado, email_enviado=email_enviado)
+
+
+@bp.route('/restablecer-password/<token>', methods=['GET', 'POST'])
+def restablecer_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('tienda.inicio'))
+
+    usuario = Usuario.verificar_token_reset_password(token)
+    if not usuario:
+        flash('El enlace no es válido o ha expirado. Solicita uno nuevo.', 'danger')
+        return redirect(url_for('auth.olvide_password'))
+
+    form = FormRestablecerPassword()
+    if form.validate_on_submit():
+        usuario.set_password(form.password.data)
+        usuario.limpiar_token_reset_password()
+        db.session.commit()
+        flash('¡Contraseña actualizada correctamente! Ya puedes iniciar sesión.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/restablecer_password.html', form=form)
 
 
 @bp.route('/logout')

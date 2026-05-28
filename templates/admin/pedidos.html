@@ -30,7 +30,14 @@
         </td>
         <td><span class="badge-estado {{ p.estado }}">{{ p.estado_label }}</span></td>
         <td class="text-muted small">{{ p.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</td>
-        <td><a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn btn-xs btn-outline-primary">Gestionar</a></td>
+        <td>
+          <a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn btn-xs btn-outline-primary">Gestionar</a>
+          <form action="{{ url_for('admin.eliminar_pedido', id=p.id) }}" method="post" class="d-inline"
+                onsubmit="return confirm('¿Eliminar el pedido {{ p.numero_pedido }}? Esta acción no se puede deshacer.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-xs btn-outline-danger">Eliminar</button>
+          </form>
+        </td>
       </tr>
       {% else %}
       <tr><td colspan="8" class="text-center py-4 text-muted">No hay pedidos.</td></tr>
