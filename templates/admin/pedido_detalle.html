@@ -76,6 +76,13 @@
         </div>
         <button type="submit" class="btn btn-admin-primary w-100 btn-sm">Actualizar estado</button>
       </form>
+      <form action="{{ url_for('admin.eliminar_pedido', id=pedido.id) }}" method="post" class="mt-2"
+            onsubmit="return confirm('¿Eliminar el pedido {{ pedido.numero_pedido }}? Esta acción no se puede deshacer.')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
+          <i class="bi bi-trash me-1"></i>Eliminar pedido
+        </button>
+      </form>
     </div>
     <div class="admin-card">
       <h6 class="admin-card-title">Información de pago</h6>

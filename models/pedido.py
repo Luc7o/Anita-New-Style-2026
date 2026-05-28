@@ -7,7 +7,7 @@ class Pedido(db.Model):
 
     id              = db.Column(db.Integer, primary_key=True)
     numero_pedido   = db.Column(db.String(30), unique=True, nullable=False)
-    usuario_id      = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    usuario_id      = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False)
 
     # Estado del pedido
     ESTADOS = {
@@ -64,7 +64,8 @@ class Pedido(db.Model):
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     fecha_actualiz = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    detalles = db.relationship('DetallePedido', backref='pedido', lazy='dynamic', cascade='all, delete-orphan')
+    detalles = db.relationship('DetallePedido', backref='pedido', lazy='dynamic',
+                               cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
     def generar_numero():
@@ -90,7 +91,7 @@ class DetallePedido(db.Model):
     __tablename__ = 'detalles_pedido'
 
     id          = db.Column(db.Integer, primary_key=True)
-    pedido_id   = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=False)
+    pedido_id   = db.Column(db.Integer, db.ForeignKey('pedidos.id', ondelete='CASCADE'), nullable=False)
     producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
     cantidad    = db.Column(db.Integer, nullable=False, default=1)
     precio_unit = db.Column(db.Numeric(10,2), nullable=False)
