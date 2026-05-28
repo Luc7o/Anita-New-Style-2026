@@ -27,6 +27,19 @@
       <div class="col-6"><div class="stat-card text-center"><h4>S/ {{ "%.0f"|format(pedidos | sum(attribute='total') | float) }}</h4><p class="small text-muted">Total gastado</p></div></div>
     </div>
     <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary w-100 mt-3"><i class="bi bi-arrow-left me-1"></i>Volver</a>
+    <form action="{{ url_for('admin.toggle_cliente', id=cliente.id) }}" method="post" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn w-100 btn-sm {{ 'btn-outline-danger' if cliente.activo else 'btn-outline-success' }}">
+        {{ 'Desactivar cliente' if cliente.activo else 'Activar cliente' }}
+      </button>
+    </form>
+    <form action="{{ url_for('admin.eliminar_cliente', id=cliente.id) }}" method="post" class="mt-2"
+          onsubmit="return confirm('¿Eliminar a {{ cliente.nombre_completo }} y todos sus pedidos? Esta acción no se puede deshacer.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger w-100 btn-sm">
+        <i class="bi bi-trash me-1"></i>Eliminar cliente
+      </button>
+    </form>
   </div>
   <div class="col-lg-8">
     <div class="admin-card">

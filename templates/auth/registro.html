@@ -13,18 +13,6 @@
       {{ form.hidden_tag() }}
       <div class="row g-3">
 
-        <!-- DNI con auto-completado -->
-        <div class="col-12">
-          <label class="form-label-ans">
-            DNI <span style="color:rgba(255,255,255,.5);font-size:.75rem;">(se completará tu nombre automáticamente)</span>
-          </label>
-          <div style="position:relative">
-            <input type="text" id="dni" name="dni" class="form-control form-control-ans"
-                   data-tipo="dni" placeholder="12345678" maxlength="8">
-            <div class="dni-badge"></div>
-          </div>
-        </div>
-
         <div class="col-md-6">
           {{ form.nombre.label(class="form-label-ans") }}
           {{ form.nombre(class="form-control form-control-ans" + (" is-invalid" if form.nombre.errors else ""), placeholder="Tu nombre") }}
@@ -44,16 +32,31 @@
           {{ form.telefono.label(class="form-label-ans") }}
           {{ form.telefono(class="form-control form-control-ans", placeholder="999 999 999") }}
         </div>
+
+        <!-- Contraseña con ojo -->
         <div class="col-md-6">
           {{ form.password.label(class="form-label-ans") }}
-          {{ form.password(class="form-control form-control-ans" + (" is-invalid" if form.password.errors else ""), placeholder="Mínimo 6 caracteres") }}
-          {% for e in form.password.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          <div class="input-password-wrap">
+            {{ form.password(class="form-control form-control-ans" + (" is-invalid" if form.password.errors else ""), id="password_reg", placeholder="Mínimo 8 caracteres") }}
+            <button type="button" class="btn-ver-pass" onclick="togglePass('password_reg', 'eye_reg')">
+              <i class="bi bi-eye" id="eye_reg"></i>
+            </button>
+          </div>
+          {% for e in form.password.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
         </div>
+
+        <!-- Confirmar contraseña con ojo -->
         <div class="col-md-6">
           {{ form.password2.label(class="form-label-ans") }}
-          {{ form.password2(class="form-control form-control-ans" + (" is-invalid" if form.password2.errors else ""), placeholder="Repite la contraseña") }}
-          {% for e in form.password2.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+          <div class="input-password-wrap">
+            {{ form.password2(class="form-control form-control-ans" + (" is-invalid" if form.password2.errors else ""), id="password_reg2", placeholder="Repite la contraseña") }}
+            <button type="button" class="btn-ver-pass" onclick="togglePass('password_reg2', 'eye_reg2')">
+              <i class="bi bi-eye" id="eye_reg2"></i>
+            </button>
+          </div>
+          {% for e in form.password2.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
         </div>
+
         <div class="col-12 mt-2">
           {{ form.submit(class="btn btn-ans w-100 btn-lg") }}
         </div>

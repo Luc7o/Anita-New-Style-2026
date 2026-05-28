@@ -10,11 +10,36 @@
       <div class="col-lg-7">
         <div class="checkout-card mb-4">
           <h5 class="checkout-section-title"><i class="bi bi-person-lines-fill me-2"></i>Datos de contacto</h5>
-          <div class="row g-3">
-            <div class="col-12 mb-2">
-              <label class="form-label-ans">DNI del destinatario <span class="text-muted small">(opcional — autocompleta nombre)</span></label>
-              <div style="position:relative"><input type="text" id="dni_checkout" name="dni_checkout" class="form-control form-control-ans" data-tipo="dni" placeholder="12345678"><div class="dni-badge"></div></div>
+          <!-- Autocompletado DNI / RUC -->
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label-ans">
+                Autocompletar datos del destinatario
+                <span class="text-muted small">(opcional)</span>
+              </label>
+              <div class="d-flex gap-2 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary tipo-doc-btn active" data-tipo="dni">
+                  DNI
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary tipo-doc-btn" data-tipo="ruc">
+                  RUC
+                </button>
+              </div>
+              <div style="position:relative">
+                <input type="text" id="dni_checkout" name="dni_checkout"
+                       class="form-control form-control-ans"
+                       data-tipo="dni"
+                       placeholder="Ingresa DNI (8 dígitos)"
+                       maxlength="8">
+                <div class="dni-badge"></div>
+              </div>
+              <div class="form-text text-muted" style="font-size:.75rem;">
+                <i class="bi bi-lightning-charge-fill text-warning"></i>
+                Se completarán tu nombre y dirección automáticamente.
+              </div>
             </div>
+          </div>
+          <div class="row g-3">
             <div class="col-md-8">{{ form.nombre.label(class="form-label-ans") }}{{ form.nombre(class="form-control form-control-ans") }}</div>
             <div class="col-md-4">{{ form.telefono.label(class="form-label-ans") }}{{ form.telefono(class="form-control form-control-ans") }}</div>
           </div>
@@ -93,7 +118,34 @@
   </form>
 </div>
 <script>
-function toggleDireccion(val) {
+// ── Switcher DNI / RUC en checkout ──────────────────────────────────────────
+document.querySelectorAll('.tipo-doc-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    document.querySelectorAll('.tipo-doc-btn').forEach(b => b.classList.remove('active', 'btn-ans'));
+    this.classList.add('active', 'btn-ans');
+    this.classList.remove('btn-outline-secondary');
+
+    const tipo = this.dataset.tipo;
+    const input = document.getElementById('dni_checkout');
+    input.dataset.tipo = tipo;
+    input._dniRucActivado = false; // resetear para re-activar
+
+    if (tipo === 'dni') {
+      input.maxLength = 8;
+      input.placeholder = 'Ingresa DNI (8 dígitos)';
+    } else {
+      input.maxLength = 11;
+      input.placeholder = 'Ingresa RUC (11 dígitos)';
+    }
+    input.value = '';
+    // Re-activar el listener de autocompletado
+    if (window.AnitaDNI) window.AnitaDNI.escanear(document.getElementById('dni_checkout').parentElement);
+  });
+});
+// Estilo inicial del botón activo
+document.querySelector('.tipo-doc-btn.active')?.classList.add('btn-ans');
+document.querySelector('.tipo-doc-btn.active')?.classList.remove('btn-outline-secondary');
+</script>
   document.getElementById('secDireccion').style.display = val === 'recojo' ? 'none' : 'block';
   document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
   event.target.closest('.entrega-opcion').classList.add('active');

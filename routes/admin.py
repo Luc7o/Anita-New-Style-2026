@@ -566,6 +566,20 @@ def ver_pedido(id):
     return render_template('admin/pedido_detalle.html', pedido=pedido)
 
 
+@bp.route('/pedidos/<int:id>/eliminar', methods=['POST'])
+@admin_requerido
+def eliminar_pedido(id):
+    pedido = Pedido.query.get_or_404(id)
+    numero = pedido.numero_pedido
+    # Borrar detalles manualmente primero (por si MySQL no tiene ON DELETE CASCADE aún)
+    from models.pedido import DetallePedido
+    DetallePedido.query.filter_by(pedido_id=id).delete()
+    db.session.delete(pedido)
+    db.session.commit()
+    flash(f'Pedido {numero} eliminado correctamente.', 'success')
+    return redirect(url_for('admin.pedidos'))
+
+
 @bp.route('/pedidos/<int:id>/estado', methods=['POST'])
 @admin_requerido
 def cambiar_estado(id):
@@ -614,6 +628,32 @@ def toggle_cliente(id):
     db.session.commit()
     estado = 'activado' if cliente.activo else 'desactivado'
     flash(f'Cliente {estado}.', 'info')
+    return redirect(url_for('admin.clientes'))
+
+
+@bp.route('/clientes/<int:id>/eliminar', methods=['POST'])
+@admin_requerido
+def eliminar_cliente(id):
+    cliente = Usuario.query.get_or_404(id)
+
+    if cliente.es_admin:
+        flash('No puedes eliminar un administrador.', 'danger')
+        return redirect(url_for('admin.clientes'))
+
+    if cliente.id == current_user.id:
+        flash('No puedes eliminar tu propia cuenta.', 'danger')
+        return redirect(url_for('admin.clientes'))
+
+    nombre = cliente.nombre_completo
+    # Borrar en cascada manualmente (MySQL puede no tener ON DELETE CASCADE aún)
+    from models.pedido import DetallePedido
+    pedido_ids = [p.id for p in cliente.pedidos.all()]
+    if pedido_ids:
+        DetallePedido.query.filter(DetallePedido.pedido_id.in_(pedido_ids)).delete(synchronize_session=False)
+        Pedido.query.filter(Pedido.usuario_id == id).delete(synchronize_session=False)
+    db.session.delete(cliente)
+    db.session.commit()
+    flash(f'Cliente "{nombre}" eliminado correctamente.', 'success')
     return redirect(url_for('admin.clientes'))
 
 

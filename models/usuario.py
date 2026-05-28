@@ -2,6 +2,7 @@ from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app_extensions import db
+import secrets
 
 
 class Usuario(UserMixin, db.Model):
@@ -33,10 +34,15 @@ class Usuario(UserMixin, db.Model):
     codigo_2fa        = db.Column(db.String(6))
     codigo_2fa_expira = db.Column(db.DateTime)
 
+    # ── Recuperación de contraseña ────────────────────────────────────────────
+    reset_token        = db.Column(db.String(100), unique=True, index=True)
+    reset_token_expira = db.Column(db.DateTime)
+
     # Relaciones
-    pedidos = db.relationship('Pedido',      backref='cliente', lazy='dynamic')
+    pedidos = db.relationship('Pedido',      backref='cliente', lazy='dynamic',
+                              cascade='all, delete-orphan', passive_deletes=True)
     carrito = db.relationship('ItemCarrito', backref='usuario', lazy='dynamic',
-                              cascade='all, delete-orphan')
+                              cascade='all, delete-orphan', passive_deletes=True)
 
     # ── Contraseña ────────────────────────────────────────────────────────────
     def set_password(self, password):
@@ -66,6 +72,29 @@ class Usuario(UserMixin, db.Model):
         """Invalida el código después de usarlo."""
         self.codigo_2fa        = None
         self.codigo_2fa_expira = None
+
+    # ── Recuperación de contraseña ────────────────────────────────────────────
+    def generar_token_reset_password(self):
+        """Genera un token seguro válido por 30 minutos."""
+        from datetime import timedelta
+        self.reset_token        = secrets.token_urlsafe(48)
+        self.reset_token_expira = datetime.utcnow() + timedelta(minutes=30)
+        return self.reset_token
+
+    def limpiar_token_reset_password(self):
+        """Invalida el token después de usarlo."""
+        self.reset_token        = None
+        self.reset_token_expira = None
+
+    @staticmethod
+    def verificar_token_reset_password(token):
+        """Busca el usuario por token y verifica que no haya expirado."""
+        usuario = Usuario.query.filter_by(reset_token=token).first()
+        if not usuario or not usuario.reset_token_expira:
+            return None
+        if datetime.utcnow() > usuario.reset_token_expira:
+            return None
+        return usuario
 
     # ── Propiedades ───────────────────────────────────────────────────────────
     @property
