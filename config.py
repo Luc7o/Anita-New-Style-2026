@@ -32,6 +32,8 @@ class Config:
     YAPE_NUMERO = os.environ.get('YAPE_NUMERO', '999999999')
     YAPE_NOMBRE = os.environ.get('YAPE_NOMBRE', 'Anita New Style')
 
+    MAIL_DESTINATARIO   = os.environ.get('MAIL_DESTINATARIO', os.environ.get('MAIL_USERNAME', ''))
+
     MAIL_SERVER         = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT           = int(os.environ.get('MAIL_PORT', 587))
     MAIL_USE_TLS        = True

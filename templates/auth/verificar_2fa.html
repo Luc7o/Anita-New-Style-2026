@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titulo %}Verificar identidad{% endblock %}
+{% block contenido %}
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-header text-center">
+      <div class="auth-2fa-icon">🔐</div>
+      <h4 class="mt-2 mb-1">Verifica tu identidad</h4>
+      <p class="text-muted small">
+        Enviamos un código de 6 dígitos a<br>
+        <strong>{{ email_mask }}</strong>
+      </p>
+    </div>
+
+    <form method="post" novalidate autocomplete="off">
+      {{ form.hidden_tag() }}
+      <div class="mb-4">
+        {{ form.codigo.label(class="form-label-ans text-center d-block") }}
+        {{ form.codigo(
+            class="form-control form-control-ans text-center fs-4 fw-bold letter-spacing-code" +
+                  (" is-invalid" if form.codigo.errors else ""),
+            placeholder="000000",
+            maxlength="6",
+            inputmode="numeric",
+            autofocus=true
+        ) }}
+        {% for e in form.codigo.errors %}
+        <div class="invalid-feedback text-center">{{ e }}</div>
+        {% endfor %}
+      </div>
+
+      {{ form.submit(class="btn btn-ans w-100 btn-lg") }}
+    </form>
+
+    <!-- Reenviar código -->
+    <div class="text-center mt-3">
+      <span class="text-muted small">¿No llegó el correo?</span>
+      <form method="post" action="{{ url_for('auth.reenviar_codigo') }}" class="d-inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn-link-ans small ms-1">Reenviar código</button>
+      </form>
+    </div>
+
+    <!-- Volver al login -->
+    <div class="text-center mt-2">
+      <a href="{{ url_for('auth.login') }}" class="text-muted small">
+        ← Volver al inicio de sesión
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.auth-2fa-icon {
+  font-size: 3rem; line-height: 1;
+  animation: pulse-lock .8s ease-in-out infinite alternate;
+}
+@keyframes pulse-lock {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+.letter-spacing-code { letter-spacing: 8px; font-size: 1.8rem !important; }
+.btn-link-ans {
+  background: none; border: none; padding: 0;
+  color: var(--ans-primary, #a53694); font-weight: 600;
+  cursor: pointer; text-decoration: underline;
+}
+.btn-link-ans:hover { opacity: .75; }
+</style>
+
+<script>
+// Solo permite números en el campo código
+document.querySelector('[name="codigo"]').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 6);
+});
+</script>
+{% endblock %}
