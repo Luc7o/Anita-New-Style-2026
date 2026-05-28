@@ -1,163 +1,307 @@
 {% extends "admin/base_admin.html" %}
 {% block titulo %}Dashboard{% endblock %}
 {% block topbar_titulo %}Dashboard{% endblock %}
+
 {% block head_extra %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% endblock %}
+
+{% block topbar_acciones %}
+<form method="POST" action="{{ url_for('admin.enviar_resumen_diario_manual') }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-sm btn-outline-primary">
+    <i class="bi bi-envelope me-1"></i>Resumen del día
+  </button>
+</form>
+{% endblock %}
+
 {% block contenido %}
 
-<!-- ── KPI Cards ────────────────────────────────────────────────────────────── -->
-<div class="row g-4 mb-4">
-  <div class="col-sm-6 col-xl-3">
-    <div class="kpi-card kpi-ventas">
-      <div class="kpi-icon"><i class="bi bi-currency-dollar"></i></div>
-      <div class="kpi-info">
-        <p class="kpi-label">Ventas totales</p>
-        <h3 class="kpi-valor">S/ {{ "%.2f"|format(total_ventas) }}</h3>
+<!-- ── KPIs fila 1: físico ──────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-success"><i class="bi bi-currency-dollar"></i></div>
+      <div>
+        <div class="stat-value">{{ ventas_hoy | moneda }}</div>
+        <div class="stat-label">Ventas hoy ({{ num_ventas_hoy }} venta{{ 's' if num_ventas_hoy != 1 }})</div>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="kpi-card kpi-pedidos">
-      <div class="kpi-icon"><i class="bi bi-receipt"></i></div>
-      <div class="kpi-info">
-        <p class="kpi-label">Total pedidos</p>
-        <h3 class="kpi-valor">{{ total_pedidos }}</h3>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-info"><i class="bi bi-calendar-month"></i></div>
+      <div>
+        <div class="stat-value">{{ ventas_mes | moneda }}</div>
+        <div class="stat-label">Ventas físicas este mes</div>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="kpi-card kpi-clientes">
-      <div class="kpi-icon"><i class="bi bi-people"></i></div>
-      <div class="kpi-info">
-        <p class="kpi-label">Clientes registrados</p>
-        <h3 class="kpi-valor">{{ total_clientes }}</h3>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--adm-accent-l);"><i class="bi bi-shop"></i></div>
+      <div>
+        <div class="stat-value">{{ total_ventas_online | moneda }}</div>
+        <div class="stat-label">Ventas online totales</div>
       </div>
     </div>
   </div>
-  <div class="col-sm-6 col-xl-3">
-    <div class="kpi-card kpi-productos">
-      <div class="kpi-icon"><i class="bi bi-box-seam"></i></div>
-      <div class="kpi-info">
-        <p class="kpi-label">Productos activos</p>
-        <h3 class="kpi-valor">{{ total_productos }}</h3>
-        {% if sin_stock > 0 %}
-        <small class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>{{ sin_stock }} sin stock</small>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-warning"><i class="bi bi-boxes"></i></div>
+      <div>
+        <div class="stat-value">{{ valor_inventario | moneda }}</div>
+        <div class="stat-label">Valor inventario</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── KPIs fila 2: gestión ─────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#6f42c1;"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-value">{{ total_productos }}</div>
+        <div class="stat-label">Productos activos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card {% if sin_stock > 0 %}stat-danger{% endif %}">
+      <div class="stat-icon {% if sin_stock > 0 %}bg-danger{% else %}bg-success{% endif %}"><i class="bi bi-exclamation-octagon"></i></div>
+      <div>
+        <div class="stat-value">{{ sin_stock }}</div>
+        <div class="stat-label">Sin stock</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card {% if pedidos_pendientes > 0 %}stat-warning{% endif %}">
+      <div class="stat-icon {% if pedidos_pendientes > 0 %}bg-warning{% else %}bg-secondary{% endif %}"><i class="bi bi-clock"></i></div>
+      <div>
+        <div class="stat-value">{{ pedidos_pendientes }}</div>
+        <div class="stat-label">Pedidos online pendientes</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon bg-secondary"><i class="bi bi-people"></i></div>
+      <div>
+        <div class="stat-value">{{ total_clientes }}</div>
+        <div class="stat-label">Clientes registrados</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Fila 3: Gráfico ventas + alertas stock ───────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="adm-card h-100">
+      <div class="adm-card-header">
+        <i class="bi bi-graph-up-arrow me-2 text-accent"></i>Ventas físicas — últimos 7 días
+      </div>
+      <div class="adm-card-body" style="padding:.8rem 1rem 1rem;">
+        <canvas id="chartVentas" style="max-height:220px;"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="adm-card h-100">
+      <div class="adm-card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Alertas de stock</span>
+        <span class="badge-count">{{ sin_stock + productos_stock_bajo }}</span>
+      </div>
+      <div class="adm-card-body p-0">
+        {% if alertas_stock %}
+        <div class="stock-list">
+          {% for p in alertas_stock %}
+          <a href="{{ url_for('admin.ver_producto', id=p.id) }}" class="stock-item {% if p.sin_stock %}sin-stock{% else %}stock-bajo{% endif %}">
+            <div class="stock-nombre">{{ p.nombre }}</div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge {% if p.sin_stock %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                {% if p.sin_stock %}Sin stock{% else %}{{ p.stock }} uds.{% endif %}
+              </span>
+              <a href="{{ url_for('admin.nuevo_movimiento', prod=p.id) }}" class="btn-mini" title="Registrar entrada">
+                <i class="bi bi-plus-lg"></i>
+              </a>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted small">
+          <i class="bi bi-check-circle fs-3 d-block mb-2 text-success"></i>Todo el inventario está en orden
+        </div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<div class="row g-4 mb-4">
-  <!-- Gráfico ventas por categoría -->
-  <div class="col-lg-5">
-    <div class="admin-card h-100">
-      <h6 class="admin-card-title"><i class="bi bi-pie-chart me-2"></i>Ventas por categoría</h6>
-      <canvas id="graficoCat" height="280"></canvas>
+<!-- ── Fila 4: Top productos + últimas ventas físicas + últimos movimientos ─── -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <div class="adm-card h-100">
+      <div class="adm-card-header">
+        <i class="bi bi-trophy me-2 text-warning"></i>Top ventas físicas del mes
+      </div>
+      <div class="adm-card-body p-0">
+        {% if top_productos %}
+        <table class="table-mini">
+          <thead><tr><th>Producto</th><th class="text-end">Uds.</th><th class="text-end">S/</th></tr></thead>
+          <tbody>
+          {% for p in top_productos %}
+          <tr>
+            <td class="text-truncate" style="max-width:120px;" title="{{ p.nombre }}">{{ p.nombre }}</td>
+            <td class="text-end fw-600">{{ p.unidades }}</td>
+            <td class="text-end text-accent fw-600">{{ p.monto | moneda }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted small text-center py-3">Sin ventas físicas este mes</p>
+        {% endif %}
+      </div>
     </div>
   </div>
-  <!-- Accesos rápidos -->
-  <div class="col-lg-7">
-    <div class="admin-card h-100">
-      <h6 class="admin-card-title"><i class="bi bi-lightning me-2"></i>Accesos rápidos</h6>
-      <div class="row g-3">
-        <div class="col-6 col-md-3">
-          <a href="{{ url_for('admin.nuevo_producto') }}" class="acceso-rapido">
-            <i class="bi bi-plus-circle fs-2"></i><span>Nuevo producto</span>
+  <div class="col-lg-4">
+    <div class="adm-card h-100">
+      <div class="adm-card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cart-check me-2 text-info"></i>Últimas ventas físicas</span>
+        <a href="{{ url_for('admin.ventas_fisicas') }}" class="link-ver-mas">Ver todas</a>
+      </div>
+      <div class="adm-card-body p-0">
+        {% if ultimas_ventas %}
+        <div class="venta-list">
+          {% for v in ultimas_ventas %}
+          <a href="{{ url_for('admin.ver_venta', id=v.id) }}" class="venta-item">
+            <div>
+              <div class="fw-600 small">{{ v.numero_venta }}</div>
+              <div class="text-muted" style="font-size:.75rem;">{{ v.fecha | fecha_hora }}</div>
+            </div>
+            <span class="text-accent fw-700 small">{{ v.total | moneda }}</span>
           </a>
+          {% endfor %}
         </div>
-        <div class="col-6 col-md-3">
-          <a href="{{ url_for('admin.pedidos', estado='pendiente') }}" class="acceso-rapido">
-            <i class="bi bi-clock fs-2"></i><span>Pedidos pendientes</span>
-          </a>
+        {% else %}
+        <p class="text-muted small text-center py-3">Sin ventas registradas</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="adm-card h-100">
+      <div class="adm-card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-arrow-left-right me-2 text-accent"></i>Movimientos recientes</span>
+        <a href="{{ url_for('admin.movimientos') }}" class="link-ver-mas">Ver todos</a>
+      </div>
+      <div class="adm-card-body p-0">
+        {% if ultimos_movimientos %}
+        <div class="mov-list">
+          {% for m in ultimos_movimientos %}
+          <div class="mov-item">
+            <span class="mov-badge badge-{{ m.tipo_color }}">
+              <i class="bi bi-{{ m.tipo_icono }}"></i>
+            </span>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="small text-truncate fw-600">{{ m.producto.nombre }}</div>
+              <div class="text-muted" style="font-size:.72rem;">{{ m.tipo_label }} · {{ m.fecha | fecha_hora }}</div>
+            </div>
+            <span class="fw-700 small {% if m.tipo in ('entrada','devolucion') %}text-success{% else %}text-danger{% endif %}">
+              {% if m.tipo in ('entrada','devolucion') %}+{% else %}-{% endif %}{{ m.cantidad }}
+            </span>
+          </div>
+          {% endfor %}
         </div>
-        <div class="col-6 col-md-3">
-          <a href="{{ url_for('admin.clientes') }}" class="acceso-rapido">
-            <i class="bi bi-person-plus fs-2"></i><span>Ver clientes</span>
-          </a>
-        </div>
-        <div class="col-6 col-md-3">
-          <a href="{{ url_for('admin.categorias') }}" class="acceso-rapido">
-            <i class="bi bi-tags fs-2"></i><span>Categorías</span>
-          </a>
-        </div>
+        {% else %}
+        <p class="text-muted small text-center py-3">Sin movimientos</p>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Últimos pedidos ─────────────────────────────────────────────────────── -->
-<div class="admin-card">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="admin-card-title mb-0"><i class="bi bi-receipt me-2"></i>Últimos pedidos</h6>
-    <a href="{{ url_for('admin.pedidos') }}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+<!-- ── Últimos pedidos online ─────────────────────────────────────────────── -->
+<div class="adm-card mb-4">
+  <div class="adm-card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-receipt me-2 text-accent"></i>Últimos pedidos online</span>
+    <a href="{{ url_for('admin.pedidos') }}" class="link-ver-mas">Ver todos</a>
   </div>
   <div class="table-responsive">
-    <table class="table table-admin table-hover">
+    <table class="adm-table">
       <thead><tr><th>#Pedido</th><th>Cliente</th><th>Total</th><th>Método</th><th>Estado</th><th>Fecha</th><th></th></tr></thead>
       <tbody>
       {% for p in ultimos_pedidos %}
       <tr>
-        <td><code>{{ p.numero_pedido }}</code></td>
-        <td>{{ p.cliente.nombre_completo }}</td>
-        <td><strong>{{ p.total | moneda }}</strong></td>
-        <td>{{ p.metodo_pago_label }}</td>
-        <td><span class="badge-estado {{ p.estado }}">{{ p.estado_label }}</span></td>
-        <td class="text-muted small">{{ p.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</td>
-        <td><a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn btn-xs btn-outline-secondary">Ver</a></td>
+        <td><code class="small">{{ p.numero_pedido }}</code></td>
+        <td class="small">{{ p.cliente.nombre_completo }}</td>
+        <td class="fw-700 text-accent">{{ p.total | moneda }}</td>
+        <td class="small">{{ p.metodo_pago_label }}</td>
+        <td><span class="badge bg-secondary small">{{ p.estado_label }}</span></td>
+        <td class="small text-muted">{{ p.fecha_creacion | fecha_hora }}</td>
+        <td><a href="{{ url_for('admin.ver_pedido', id=p.id) }}" class="btn-icon"><i class="bi bi-eye"></i></a></td>
       </tr>
+      {% else %}
+      <tr><td colspan="7" class="text-center py-3 text-muted">Sin pedidos online aún</td></tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Widget consulta DNI / RUC -->
+<div class="adm-card">
+  <div class="adm-card-header"><i class="bi bi-person-vcard me-2 text-accent"></i>Consulta rápida DNI / RUC</div>
+  <div class="adm-card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label small">Consultar DNI</label>
+        <input type="text" id="dni" class="form-control form-control-sm" data-tipo="dni" placeholder="8 dígitos..." maxlength="8">
+        <div class="dni-badge mt-1"></div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Consultar RUC</label>
+        <input type="text" id="ruc" class="form-control form-control-sm" data-tipo="ruc" placeholder="11 dígitos..." maxlength="11">
+        <div class="dni-badge mt-1"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-const labCat = {{ ventas_cat | map(attribute=0) | list | tojson }};
-const datCat = {{ ventas_cat | map(attribute=1) | list | tojson }};
-if (labCat.length) {
-  new Chart(document.getElementById('graficoCat'), {
-    type: 'doughnut',
-    data: {
-      labels: labCat,
-      datasets: [{ data: datCat,
-        backgroundColor: ['#c8956c','#e8b89a','#8b4513','#d4a574','#f0d0b0'],
-        borderWidth: 2 }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-  });
-} else {
-  document.getElementById('graficoCat').parentElement.innerHTML = '<p class="text-muted text-center py-4">Sin datos de ventas aún.</p>';
-}
+const dias   = {{ ventas_semana | map(attribute='dia')   | list | tojson }};
+const totals = {{ ventas_semana | map(attribute='total') | list | tojson }};
+
+new Chart(document.getElementById('chartVentas'), {
+  type: 'bar',
+  data: {
+    labels: dias,
+    datasets: [{
+      label: 'Ventas físicas (S/)',
+      data: totals,
+      backgroundColor: 'rgba(165,54,148,.25)',
+      borderColor: '#a53694',
+      borderWidth: 2,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' },
+           ticks: { callback: v => 'S/ ' + v.toFixed(0) } },
+      x: { grid: { display: false } }
+    }
+  }
+});
 </script>
 {% endblock %}
-
-<!-- Widget consulta rápida DNI / RUC -->
-<div class="admin-card mt-4">
-  <h6 class="admin-card-title"><i class="bi bi-person-vcard me-2"></i>Consulta rápida DNI / RUC</h6>
-  <div class="row g-3">
-    <div class="col-md-6">
-      <label class="form-label">Consultar DNI</label>
-      <div style="position:relative">
-        <input type="text" id="dni" class="form-control" data-tipo="dni"
-               placeholder="Ingresa 8 dígitos..." maxlength="8">
-        <div class="dni-badge"></div>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Consultar RUC</label>
-      <div style="position:relative">
-        <input type="text" id="ruc" class="form-control" data-tipo="ruc"
-               placeholder="Ingresa 11 dígitos..." maxlength="11">
-        <div class="dni-badge"></div>
-      </div>
-    </div>
-  </div>
-  <small class="text-muted mt-2 d-block">
-    <i class="bi bi-info-circle me-1"></i>
-    Escribe el número completo para que la consulta se realice automáticamente.
-  </small>
-</div>

@@ -76,3 +76,14 @@ class FormVenta(FlaskForm):
     descuento      = DecimalField('Descuento (S/)', places=2, validators=[Optional()], default=0)
     notas          = TextAreaField('Notas', validators=[Optional()])
     submit         = SubmitField('Registrar venta')
+
+
+# ── Categorías ─────────────────────────────────────────────────────────────────
+class FormCategoria(FlaskForm):
+    nombre      = StringField('Nombre', validators=[DataRequired(), Length(max=80)])
+    slug        = StringField('Slug (URL)', validators=[Optional(), Length(max=80)])
+    descripcion = StringField('Descripción', validators=[Optional(), Length(max=300)])
+    icono       = StringField('Ícono Bootstrap', validators=[Optional(), Length(max=50)],
+                              default='box-seam')
+    activo      = BooleanField('Activa', default=True)
+    submit      = SubmitField('Guardar')
