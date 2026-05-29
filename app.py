@@ -1,6 +1,6 @@
 import os
-from flask import Flask, render_template
-from config import config
+from flask import Flask, render_template, send_from_directory
+from config import config, BASE_DIR
 from app_extensions import db, login, mail, migrate, csrf
 
 
@@ -11,8 +11,16 @@ def create_app(env=None):
     env = env or os.environ.get('FLASK_ENV', 'development')
     app.config.from_object(config.get(env, config['default']))
 
-    # Crear carpeta de uploads
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    # Ruta absoluta garantizada para uploads (independiente del CWD del servidor)
+    upload_folder = os.path.join(BASE_DIR, 'static', 'img', 'productos')
+    app.config['UPLOAD_FOLDER'] = upload_folder
+    os.makedirs(upload_folder, exist_ok=True)
+
+    # Ruta dedicada para servir imágenes de productos
+    # Soluciona el problema de visibilidad en hosting compartido (AlwaysData/Passenger)
+    @app.route('/static/img/productos/<path:filename>')
+    def imagen_producto(filename):
+        return send_from_directory(upload_folder, filename)
 
     # Extensiones
     db.init_app(app)
@@ -92,7 +100,7 @@ def create_app(env=None):
     return app
 
 
-# 🚀 ARRANQUE CORRECTO
+# Arranque directo
 if __name__ == "__main__":
     app = create_app()
     app.run(debug=True)

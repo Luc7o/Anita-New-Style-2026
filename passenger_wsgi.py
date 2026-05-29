@@ -1,10 +1,19 @@
 import sys, os
-# Añadir directorio del proyecto al path
-sys.path.insert(0, os.path.dirname(__file__))
+
+# Directorio absoluto del proyecto
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Agregar al path de Python
+if PROJECT_DIR not in sys.path:
+    sys.path.insert(0, PROJECT_DIR)
+
+# Establecer directorio de trabajo al directorio del proyecto
+# Esto es crítico para que os.path.dirname(__file__) funcione correctamente
+os.chdir(PROJECT_DIR)
 
 # Cargar variables de entorno
 from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+load_dotenv(os.path.join(PROJECT_DIR, '.env'))
 
 from app import create_app
 application = create_app(os.environ.get('FLASK_ENV', 'production'))
