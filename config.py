@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+# Directorio raíz del proyecto (donde está config.py)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-cambiar-en-produccion')
 
@@ -21,7 +24,7 @@ class Config:
         'pool_pre_ping': True,
     }
 
-    UPLOAD_FOLDER      = os.path.join(os.path.dirname(__file__), 'static', 'img', 'productos')
+    UPLOAD_FOLDER      = os.path.join(BASE_DIR, 'static', 'img', 'productos')
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 

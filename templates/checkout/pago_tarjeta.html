@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block titulo %}Pagar con tarjeta{% endblock %}
+{% block head_extra %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endblock %}
+{% block contenido %}
+<div class="container py-5" style="max-width:560px">
+  <div class="pago-card text-center">
+
+    <div class="mb-4">
+      <div class="fs-1">💳</div>
+      <h3>Pago con tarjeta</h3>
+      <p class="text-muted">Pedido <strong>#{{ pedido.numero_pedido }}</strong></p>
+      <div class="resumen-total d-inline-flex gap-3 px-4 py-2 rounded-pill"
+           style="background:var(--color-primary-xl)">
+        <span>Total a pagar:</span>
+        <strong class="text-accent">{{ pedido.total | moneda }}</strong>
+      </div>
+    </div>
+
+    <!-- Mensajes de estado -->
+    <div id="msg-error"   class="alert alert-danger   d-none mb-3"></div>
+    <div id="msg-exito"   class="alert alert-success  d-none mb-3"></div>
+    <div id="msg-proceso" class="alert alert-info     d-none mb-3">
+      <div class="spinner-border spinner-border-sm me-2"></div>Procesando tu pago…
+    </div>
+
+    <!-- Formulario Stripe -->
+    <div class="checkout-card text-start mb-4">
+      <label class="form-label-ans mb-2">Datos de la tarjeta</label>
+      <div id="card-element" class="form-control form-control-ans py-3"></div>
+      <div id="card-errors" class="text-danger small mt-2"></div>
+    </div>
+
+    <button id="btn-pagar" class="btn btn-ans w-100 btn-lg">
+      <i class="bi bi-lock me-2"></i>Pagar {{ pedido.total | moneda }}
+    </button>
+
+    <a href="{{ url_for('pedidos.mis_pedidos') }}" class="d-block mt-3 text-muted small">
+      Cancelar y ver mis pedidos
+    </a>
+  </div>
+</div>
+
+<script>
+(function () {
+  const publicKey = "{{ STRIPE_PUBLIC_KEY }}";
+  if (!publicKey) {
+    document.getElementById('msg-error').classList.remove('d-none');
+    document.getElementById('msg-error').textContent = 'Pago con tarjeta no disponible en este momento.';
+    document.getElementById('btn-pagar').disabled = true;
+    return;
+  }
+
+  const stripe  = Stripe(publicKey);
+  const elements = stripe.elements();
+  const card = elements.create('card', {
+    style: {
+      base: {
+        fontSize: '16px',
+        color: '#333',
+        '::placeholder': { color: '#aaa' }
+      }
+    }
+  });
+  card.mount('#card-element');
+
+  card.on('change', function (e) {
+    document.getElementById('card-errors').textContent = e.error ? e.error.message : '';
+  });
+
+  document.getElementById('btn-pagar').addEventListener('click', async function () {
+    const btn   = this;
+    btn.disabled = true;
+    document.getElementById('msg-proceso').classList.remove('d-none');
+    document.getElementById('msg-error').classList.add('d-none');
+
+    try {
+      // 1) Crear PaymentIntent en el servidor
+      const res = await fetch("{{ url_for('pedidos.pagar_tarjeta', numero=pedido.numero_pedido) }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // 2) Confirmar pago con Stripe
+      const result = await stripe.confirmCardPayment(data.client_secret, {
+        payment_method: { card: card }
+      });
+
+      document.getElementById('msg-proceso').classList.add('d-none');
+
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+
+      // 3) Pago exitoso
+      document.getElementById('msg-exito').classList.remove('d-none');
+      document.getElementById('msg-exito').innerHTML =
+        '<i class="bi bi-check-circle me-2"></i>¡Pago exitoso! Redirigiendo…';
+      setTimeout(() => {
+        window.location.href = "{{ url_for('pedidos.confirmacion', numero=pedido.numero_pedido) }}";
+      }, 1500);
+
+    } catch (err) {
+      document.getElementById('msg-proceso').classList.add('d-none');
+      document.getElementById('msg-error').classList.remove('d-none');
+      document.getElementById('msg-error').textContent = err.message;
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from flask_login import login_required, current_user
-from app_extensions import db
+from app_extensions import db, csrf
 from models.carrito  import ItemCarrito
 from models.pedido   import Pedido, DetallePedido
 from models.producto import Producto
@@ -119,6 +119,7 @@ def confirmar_yape(numero):
     return redirect(url_for('pedidos.confirmacion', numero=numero))
 
 @bp.route('/pagar/tarjeta/<numero>', methods=['GET','POST'])
+@csrf.exempt
 @login_required
 def pagar_tarjeta(numero):
     pedido = Pedido.query.filter_by(numero_pedido=numero, usuario_id=current_user.id).first_or_404()
@@ -139,6 +140,7 @@ def pagar_tarjeta(numero):
                            STRIPE_PUBLIC_KEY=current_app.config['STRIPE_PUBLIC_KEY'])
 
 @bp.route('/stripe/webhook', methods=['POST'])
+@csrf.exempt
 def stripe_webhook():
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
     payload   = request.get_data()

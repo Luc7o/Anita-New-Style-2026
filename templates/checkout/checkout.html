@@ -6,36 +6,28 @@
   <form method="post" id="formCheckout">
     {{ form.hidden_tag() }}
     <div class="row g-4">
-      <!-- Datos de entrega -->
+
+      <!-- ══════════════════ COLUMNA IZQUIERDA ══════════════════ -->
       <div class="col-lg-7">
+
+        <!-- 1. Datos de contacto -->
         <div class="checkout-card mb-4">
           <h5 class="checkout-section-title"><i class="bi bi-person-lines-fill me-2"></i>Datos de contacto</h5>
-          <!-- Autocompletado DNI / RUC -->
           <div class="row g-3 mb-3">
             <div class="col-12">
-              <label class="form-label-ans">
-                Autocompletar datos del destinatario
-                <span class="text-muted small">(opcional)</span>
-              </label>
+              <label class="form-label-ans">Autocompletar con DNI / RUC <span class="text-muted small">(opcional)</span></label>
               <div class="d-flex gap-2 mb-2">
-                <button type="button" class="btn btn-sm btn-outline-secondary tipo-doc-btn active" data-tipo="dni">
-                  DNI
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary tipo-doc-btn" data-tipo="ruc">
-                  RUC
-                </button>
+                <button type="button" class="btn btn-sm btn-ans tipo-doc-btn active" data-tipo="dni">DNI</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary tipo-doc-btn" data-tipo="ruc">RUC</button>
               </div>
               <div style="position:relative">
                 <input type="text" id="dni_checkout" name="dni_checkout"
                        class="form-control form-control-ans"
-                       data-tipo="dni"
-                       placeholder="Ingresa DNI (8 dígitos)"
-                       maxlength="8">
+                       data-tipo="dni" placeholder="Ingresa DNI (8 dígitos)" maxlength="8">
                 <div class="dni-badge"></div>
               </div>
-              <div class="form-text text-muted" style="font-size:.75rem;">
-                <i class="bi bi-lightning-charge-fill text-warning"></i>
-                Se completarán tu nombre y dirección automáticamente.
+              <div class="form-text text-muted" style="font-size:.75rem">
+                <i class="bi bi-lightning-charge-fill text-warning"></i> Se completarán tu nombre y dirección automáticamente.
               </div>
             </div>
           </div>
@@ -44,14 +36,16 @@
             <div class="col-md-4">{{ form.telefono.label(class="form-label-ans") }}{{ form.telefono(class="form-control form-control-ans") }}</div>
           </div>
         </div>
-        <!-- Tipo entrega -->
+
+        <!-- 2. Tipo de entrega -->
         <div class="checkout-card mb-4">
           <h5 class="checkout-section-title"><i class="bi bi-truck me-2"></i>Tipo de entrega</h5>
           <div class="row g-3">
             {% for val, label in form.tipo_entrega.choices %}
             <div class="col-md-6">
               <label class="entrega-opcion {{ 'active' if val == form.tipo_entrega.data }}">
-                <input type="radio" name="tipo_entrega" value="{{ val }}" {{ 'checked' if val == form.tipo_entrega.data }} onchange="toggleDireccion(this.value)">
+                <input type="radio" name="tipo_entrega" value="{{ val }}"
+                       {{ 'checked' if val == form.tipo_entrega.data }}>
                 <i class="bi bi-{{ 'truck' if val == 'delivery' else 'shop-window' }} fs-4"></i>
                 <span>{{ label }}</span>
               </label>
@@ -59,8 +53,10 @@
             {% endfor %}
           </div>
         </div>
-        <!-- Dirección (solo delivery) -->
-        <div class="checkout-card mb-4" id="secDireccion">
+
+        <!-- 3. Dirección (solo delivery) -->
+        <div class="checkout-card mb-4" id="secDireccion"
+             style="{{ 'display:none' if form.tipo_entrega.data == 'recojo' else '' }}">
           <h5 class="checkout-section-title"><i class="bi bi-geo-alt me-2"></i>Dirección de envío</h5>
           <div class="row g-3">
             <div class="col-12">{{ form.direccion.label(class="form-label-ans") }}{{ form.direccion(class="form-control form-control-ans", placeholder="Av. / Jr. / Ca. ...") }}</div>
@@ -70,67 +66,363 @@
             <div class="col-12">{{ form.referencia.label(class="form-label-ans") }}{{ form.referencia(class="form-control form-control-ans", placeholder="Referencia para el delivery") }}</div>
           </div>
         </div>
-        <!-- Método de pago -->
+
+        <!-- 4. Método de pago + PANEL DINÁMICO -->
         <div class="checkout-card mb-4">
           <h5 class="checkout-section-title"><i class="bi bi-credit-card me-2"></i>Método de pago</h5>
-          <div class="row g-3">
+
+          <!-- Opciones de método -->
+          <div class="row g-3 mb-3" id="metodoPagoOpciones">
             {% for val, label in form.metodo_pago.choices %}
             <div class="col-6 col-md-3">
-              <label class="pago-opcion">
-                <input type="radio" name="metodo_pago" value="{{ val }}" {{ 'checked' if val == form.metodo_pago.data }}>
-                <i class="bi bi-{{ 'phone' if val=='yape' else 'credit-card' if val=='tarjeta' else 'cash-coin' if val=='efectivo' else 'shop' }} fs-3"></i>
+              <label class="pago-opcion {{ 'active' if val == form.metodo_pago.data }}">
+                <input type="radio" name="metodo_pago" value="{{ val }}"
+                       {{ 'checked' if val == form.metodo_pago.data }}>
+                {% if val == 'yape' %}
+                  <span style="font-size:1.6rem">💜</span>
+                {% elif val == 'tarjeta' %}
+                  <i class="bi bi-credit-card fs-3"></i>
+                {% elif val == 'efectivo' %}
+                  <i class="bi bi-cash-coin fs-3"></i>
+                {% else %}
+                  <i class="bi bi-shop fs-3"></i>
+                {% endif %}
                 <span>{{ label }}</span>
               </label>
             </div>
             {% endfor %}
           </div>
-        </div>
-        <!-- Nota -->
+
+          <!-- ── Panel: YAPE ─────────────────────────────────────── -->
+          <div id="panel-yape" class="panel-pago">
+            <div class="panel-pago-inner">
+              <div class="panel-pago-header" style="background:linear-gradient(135deg,#6a0dad,#9c27b0)">
+                <span style="font-size:1.8rem">💜</span>
+                <div>
+                  <div class="panel-pago-titulo">Pagar con Yape</div>
+                  <div class="panel-pago-subtitulo">Rápido y seguro desde tu celular</div>
+                </div>
+              </div>
+              <div class="panel-pago-body">
+                <div class="row align-items-center g-3">
+                  <div class="col-md-7">
+                    <p class="mb-1 small text-muted">Al confirmar verás el número de Yape al que debes pagar:</p>
+                    <div class="dato-pago-box" style="background:#f3e5ff;border-color:#c084fc">
+                      <div class="dato-pago-label">Número Yape</div>
+                      <div class="dato-pago-valor" style="color:#6a0dad">{{ YAPE_NUMERO }}</div>
+                      <div class="dato-pago-sub">A nombre de: <strong>{{ YAPE_NOMBRE }}</strong></div>
+                    </div>
+                    <p class="mt-2 mb-0 small text-muted">
+                      <i class="bi bi-info-circle me-1 text-warning"></i>
+                      Podrás adjuntar tu captura de Yape en el siguiente paso.
+                    </p>
+                  </div>
+                  <div class="col-md-5 text-center">
+                    <div class="pasos-pago">
+                      <div class="paso-item">
+                        <div class="paso-num">1</div>
+                        <span>Confirma el pedido</span>
+                      </div>
+                      <div class="paso-flecha"><i class="bi bi-chevron-down"></i></div>
+                      <div class="paso-item">
+                        <div class="paso-num">2</div>
+                        <span>Yapea el monto</span>
+                      </div>
+                      <div class="paso-flecha"><i class="bi bi-chevron-down"></i></div>
+                      <div class="paso-item">
+                        <div class="paso-num">3</div>
+                        <span>Sube tu voucher</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Panel: TARJETA ──────────────────────────────────── -->
+          <div id="panel-tarjeta" class="panel-pago d-none">
+            <div class="panel-pago-inner">
+              <div class="panel-pago-header" style="background:linear-gradient(135deg,#1565c0,#1976d2)">
+                <i class="bi bi-credit-card" style="font-size:1.8rem"></i>
+                <div>
+                  <div class="panel-pago-titulo">Pagar con tarjeta</div>
+                  <div class="panel-pago-subtitulo">Crédito o débito — pago seguro con Stripe</div>
+                </div>
+              </div>
+              <div class="panel-pago-body">
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label class="form-label-ans">Número de tarjeta</label>
+                    <div class="tarjeta-input-fake">
+                      <i class="bi bi-credit-card text-muted me-2"></i>
+                      <span class="text-muted small">Ingresarás los datos de tu tarjeta en el siguiente paso</span>
+                      <div class="ms-auto d-flex gap-1 align-items-center">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/32px-Mastercard-logo.svg.png" alt="Mastercard" height="20">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/64px-Visa_Inc._logo.svg.png" alt="Visa" height="14">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <div class="d-flex align-items-center gap-2 text-muted small">
+                      <i class="bi bi-shield-lock-fill text-success fs-5"></i>
+                      <span>Tu información es cifrada con SSL. No guardamos datos de tarjeta.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Panel: EFECTIVO ─────────────────────────────────── -->
+          <div id="panel-efectivo" class="panel-pago d-none">
+            <div class="panel-pago-inner">
+              <div class="panel-pago-header" style="background:linear-gradient(135deg,#2e7d32,#388e3c)">
+                <i class="bi bi-cash-coin" style="font-size:1.8rem"></i>
+                <div>
+                  <div class="panel-pago-titulo">Pago contra entrega</div>
+                  <div class="panel-pago-subtitulo">Pagas en efectivo al recibir tu pedido</div>
+                </div>
+              </div>
+              <div class="panel-pago-body">
+                <div class="row g-3 align-items-center">
+                  <div class="col-md-7">
+                    <div class="dato-pago-box" style="background:#e8f5e9;border-color:#81c784">
+                      <div class="dato-pago-label">¿Con cuánto pagarás?</div>
+                      <div class="input-group mt-1">
+                        <span class="input-group-text" style="background:#fff;border-color:#81c784;font-weight:700">S/</span>
+                        <input type="number" id="efectivo_monto" name="efectivo_monto"
+                               class="form-control form-control-ans" placeholder="0.00"
+                               min="0" step="0.50" style="border-color:#81c784">
+                      </div>
+                      <div id="efectivo_vuelto" class="mt-2 small fw-bold text-success" style="min-height:1.4em"></div>
+                    </div>
+                  </div>
+                  <div class="col-md-5 text-center">
+                    <div class="pasos-pago">
+                      <div class="paso-item">
+                        <div class="paso-num" style="background:#2e7d32">1</div>
+                        <span>Confirmas el pedido</span>
+                      </div>
+                      <div class="paso-flecha"><i class="bi bi-chevron-down"></i></div>
+                      <div class="paso-item">
+                        <div class="paso-num" style="background:#2e7d32">2</div>
+                        <span>Recibe en casa</span>
+                      </div>
+                      <div class="paso-flecha"><i class="bi bi-chevron-down"></i></div>
+                      <div class="paso-item">
+                        <div class="paso-num" style="background:#2e7d32">3</div>
+                        <span>Pagas al repartidor</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Panel: RECOJO EN TIENDA ─────────────────────────── -->
+          <div id="panel-recojo" class="panel-pago d-none">
+            <div class="panel-pago-inner">
+              <div class="panel-pago-header" style="background:linear-gradient(135deg,#e65100,#f57c00)">
+                <i class="bi bi-shop" style="font-size:1.8rem"></i>
+                <div>
+                  <div class="panel-pago-titulo">Recojo en tienda</div>
+                  <div class="panel-pago-subtitulo">Recoge y paga cuando vengas a la tienda</div>
+                </div>
+              </div>
+              <div class="panel-pago-body">
+                <div class="dato-pago-box" style="background:#fff3e0;border-color:#ffb74d">
+                  <div class="dato-pago-label"><i class="bi bi-geo-alt-fill me-1"></i>Dirección de la tienda</div>
+                  <div class="dato-pago-valor" style="color:#e65100;font-size:1rem">Anita New Style</div>
+                  <div class="dato-pago-sub">Huancayo, Junín — <a href="https://wa.me/51{{ YAPE_NUMERO }}" target="_blank" class="link-ans">Coordinar por WhatsApp</a></div>
+                </div>
+                <div class="mt-3 small text-muted">
+                  <i class="bi bi-clock me-1"></i>
+                  Recibirás una notificación cuando tu pedido esté listo para recoger.
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- fin checkout-card método de pago -->
+
+        <!-- 5. Nota -->
         <div class="checkout-card">
-          <h5 class="checkout-section-title"><i class="bi bi-chat-text me-2"></i>Nota del pedido (opcional)</h5>
-          {{ form.nota(class="form-control form-control-ans", rows=3, placeholder="Instrucciones especiales...") }}
+          <h5 class="checkout-section-title"><i class="bi bi-chat-text me-2"></i>Nota del pedido <span class="text-muted small fw-normal">(opcional)</span></h5>
+          {{ form.nota(class="form-control form-control-ans", rows=3, placeholder="Instrucciones especiales para el delivery, tallas alternativas, etc.") }}
         </div>
-      </div>
-      <!-- Resumen -->
+
+      </div><!-- fin col-lg-7 -->
+
+      <!-- ══════════════════ RESUMEN ══════════════════ -->
       <div class="col-lg-5">
-        <div class="resumen-card sticky-top" style="top:100px">
+        <div class="resumen-card sticky-top" style="top:90px">
           <h5 class="resumen-title">Resumen del pedido</h5>
           {% for item in items %}
           <div class="resumen-item">
-            <span class="resumen-item-nombre">{{ item.producto.nombre }} {% if item.talla %}({{ item.talla }}){% endif %} ×{{ item.cantidad }}</span>
-            <span>{{ item.subtotal | moneda }}</span>
+            <span class="resumen-item-nombre">
+              {{ item.producto.nombre }}
+              {% if item.talla %}<span class="badge-pago ms-1">{{ item.talla }}</span>{% endif %}
+              <span class="text-muted">×{{ item.cantidad }}</span>
+            </span>
+            <span class="fw-bold">{{ item.subtotal | moneda }}</span>
           </div>
           {% endfor %}
           <hr>
           <div class="resumen-linea"><span>Subtotal</span><span>{{ subtotal | moneda }}</span></div>
           <div class="resumen-linea">
             <span>Envío</span>
-            <span>{% if costo_envio == 0 %}<span class="text-success">¡Gratis!</span>{% else %}{{ costo_envio | moneda }}{% endif %}</span>
+            <span>{% if costo_envio == 0 %}<span class="text-success fw-bold">¡Gratis!</span>{% else %}{{ costo_envio | moneda }}{% endif %}</span>
           </div>
           <hr>
-          <div class="resumen-total"><span>Total</span><span>{{ total | moneda }}</span></div>
+          <div class="resumen-total"><span>Total</span><span id="total-mostrado">{{ total | moneda }}</span></div>
+
+          <!-- Badge método seleccionado -->
+          <div class="text-center mt-3">
+            <span class="badge-pago" id="badge-metodo">
+              <span id="badge-metodo-icon">💜</span>
+              <span id="badge-metodo-texto">Yape</span>
+            </span>
+          </div>
+
           <button type="submit" class="btn btn-ans w-100 btn-lg mt-3">
             <i class="bi bi-lock me-2"></i>Confirmar pedido
           </button>
+          <p class="text-center text-muted small mt-2 mb-0">
+            <i class="bi bi-shield-check me-1"></i>Compra 100% segura
+          </p>
         </div>
       </div>
+
     </div>
   </form>
 </div>
+
+<!-- ─────────── CSS inline para los paneles ─────────── -->
+<style>
+.panel-pago { transition: all .3s ease; }
+.panel-pago-inner {
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.panel-pago-header {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 1rem 1.2rem;
+  color: #fff;
+}
+.panel-pago-titulo    { font-weight: 700; font-size: 1rem; letter-spacing: .3px; }
+.panel-pago-subtitulo { font-size: .78rem; opacity: .88; }
+.panel-pago-body      { padding: 1.2rem; background: rgba(255,255,255,.9); }
+
+.dato-pago-box {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: .8rem 1rem;
+}
+.dato-pago-label { font-size: .72rem; font-weight: 700; text-transform: uppercase;
+                   letter-spacing: .8px; color: var(--color-text-light); margin-bottom: .25rem; }
+.dato-pago-valor { font-size: 1.25rem; font-weight: 700; color: var(--color-primary); letter-spacing: 1px; }
+.dato-pago-sub   { font-size: .78rem; color: var(--color-text-light); margin-top: .15rem; }
+
+.tarjeta-input-fake {
+  display: flex; align-items: center;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: .6rem 1rem;
+  background: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.pasos-pago { display: flex; flex-direction: column; align-items: center; gap: .15rem; }
+.paso-item  { display: flex; align-items: center; gap: .5rem; font-size: .75rem; font-weight: 600; color: var(--color-text-light); }
+.paso-num   { width: 22px; height: 22px; border-radius: 50%; background: var(--color-primary);
+              color: #fff; display: flex; align-items: center; justify-content: center;
+              font-size: .72rem; font-weight: 700; flex-shrink: 0; }
+.paso-flecha { color: var(--color-primary-l); font-size: .7rem; }
+</style>
+
+<!-- ─────────── JavaScript ─────────── -->
 <script>
-// ── Switcher DNI / RUC en checkout ──────────────────────────────────────────
+const TOTAL = {{ total }};
+
+// Mapa de configuración por método
+const METODOS = {
+  yape:     { icon: '💜', texto: 'Yape',              panel: 'panel-yape'     },
+  tarjeta:  { icon: '💳', texto: 'Tarjeta',           panel: 'panel-tarjeta'  },
+  efectivo: { icon: '💵', texto: 'Efectivo',          panel: 'panel-efectivo' },
+  recojo:   { icon: '🏪', texto: 'Recojo en tienda',  panel: 'panel-recojo'   },
+};
+
+// ── Cambiar panel de pago ───────────────────────────────────────────────────
+function cambiarMetodoPago(val) {
+  // Resaltar opción seleccionada
+  document.querySelectorAll('.pago-opcion').forEach(el => el.classList.remove('active'));
+  const r = document.querySelector(`.pago-opcion input[value="${val}"]`);
+  if (r) r.closest('.pago-opcion').classList.add('active');
+
+  // Mostrar/ocultar panel correspondiente
+  Object.keys(METODOS).forEach(m => {
+    const el = document.getElementById(METODOS[m].panel);
+    if (el) el.classList.toggle('d-none', m !== val);
+  });
+
+  // Actualizar badge en resumen
+  const cfg = METODOS[val] || { icon: '', texto: val };
+  document.getElementById('badge-metodo-icon').textContent = cfg.icon;
+  document.getElementById('badge-metodo-texto').textContent = cfg.texto;
+}
+
+// ── Cálculo de vuelto (efectivo) ────────────────────────────────────────────
+document.getElementById('efectivo_monto')?.addEventListener('input', function () {
+  const con  = parseFloat(this.value) || 0;
+  const vuelto = con - TOTAL;
+  const el = document.getElementById('efectivo_vuelto');
+  if (con === 0) {
+    el.textContent = '';
+  } else if (vuelto < 0) {
+    el.style.color = '#c62828';
+    el.textContent = `⚠ Monto insuficiente (faltan S/ ${Math.abs(vuelto).toFixed(2)})`;
+  } else {
+    el.style.color = '#2e7d32';
+    el.textContent = `Vuelto: S/ ${vuelto.toFixed(2)}`;
+  }
+});
+
+// ── Toggle sección dirección ────────────────────────────────────────────────
+function toggleDireccion(val) {
+  const sec = document.getElementById('secDireccion');
+  if (sec) sec.style.display = (val === 'recojo') ? 'none' : 'block';
+}
+
+// ── Listeners generales ─────────────────────────────────────────────────────
+document.querySelectorAll('.pago-opcion input').forEach(r => {
+  r.addEventListener('change', () => cambiarMetodoPago(r.value));
+});
+
+document.querySelectorAll('.entrega-opcion input').forEach(r => {
+  r.addEventListener('change', function () {
+    document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
+    this.closest('.entrega-opcion').classList.add('active');
+    toggleDireccion(this.value);
+  });
+});
+
+// ── Switcher DNI / RUC ──────────────────────────────────────────────────────
 document.querySelectorAll('.tipo-doc-btn').forEach(btn => {
   btn.addEventListener('click', function () {
-    document.querySelectorAll('.tipo-doc-btn').forEach(b => b.classList.remove('active', 'btn-ans'));
+    document.querySelectorAll('.tipo-doc-btn').forEach(b => {
+      b.classList.remove('active', 'btn-ans');
+      b.classList.add('btn-outline-secondary');
+    });
     this.classList.add('active', 'btn-ans');
     this.classList.remove('btn-outline-secondary');
-
-    const tipo = this.dataset.tipo;
     const input = document.getElementById('dni_checkout');
-    input.dataset.tipo = tipo;
-    input._dniRucActivado = false; // resetear para re-activar
-
-    if (tipo === 'dni') {
+    input.dataset.tipo = this.dataset.tipo;
+    input._dniRucActivado = false;
+    if (this.dataset.tipo === 'dni') {
       input.maxLength = 8;
       input.placeholder = 'Ingresa DNI (8 dígitos)';
     } else {
@@ -138,27 +430,20 @@ document.querySelectorAll('.tipo-doc-btn').forEach(btn => {
       input.placeholder = 'Ingresa RUC (11 dígitos)';
     }
     input.value = '';
-    // Re-activar el listener de autocompletado
-    if (window.AnitaDNI) window.AnitaDNI.escanear(document.getElementById('dni_checkout').parentElement);
+    if (window.AnitaDNI) window.AnitaDNI.escanear(input.parentElement);
   });
 });
-// Estilo inicial del botón activo
-document.querySelector('.tipo-doc-btn.active')?.classList.add('btn-ans');
-document.querySelector('.tipo-doc-btn.active')?.classList.remove('btn-outline-secondary');
-</script>
-  document.getElementById('secDireccion').style.display = val === 'recojo' ? 'none' : 'block';
-  document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
-  event.target.closest('.entrega-opcion').classList.add('active');
-}
-document.querySelectorAll('.pago-opcion input').forEach(r => r.addEventListener('change', function() {
-  document.querySelectorAll('.pago-opcion').forEach(el => el.classList.remove('active'));
-  this.closest('.pago-opcion').classList.add('active');
-}));
-document.querySelectorAll('.entrega-opcion input').forEach(r => r.addEventListener('change', function() {
-  document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
-  this.closest('.entrega-opcion').classList.add('active');
-}));
-// Marcar activos al cargar
-document.querySelectorAll('.pago-opcion input:checked, .entrega-opcion input:checked').forEach(r => r.closest('label').classList.add('active'));
+
+// ── Inicializar al cargar ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function () {
+  const pagoChecked = document.querySelector('.pago-opcion input:checked');
+  if (pagoChecked) cambiarMetodoPago(pagoChecked.value);
+
+  const entregaChecked = document.querySelector('.entrega-opcion input:checked');
+  if (entregaChecked) {
+    entregaChecked.closest('.entrega-opcion').classList.add('active');
+    toggleDireccion(entregaChecked.value);
+  }
+});
 </script>
 {% endblock %}
