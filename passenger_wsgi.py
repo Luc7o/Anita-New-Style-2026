@@ -7,8 +7,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 if PROJECT_DIR not in sys.path:
     sys.path.insert(0, PROJECT_DIR)
 
-# Establecer directorio de trabajo al directorio del proyecto
-# Esto es crítico para que os.path.dirname(__file__) funcione correctamente
+# Directorio de trabajo
 os.chdir(PROJECT_DIR)
 
 # Cargar variables de entorno
