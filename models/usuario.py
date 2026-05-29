@@ -30,10 +30,6 @@ class Usuario(UserMixin, db.Model):
     ultimo_acceso  = db.Column(db.DateTime)
     foto_perfil    = db.Column(db.String(200), default='default_avatar.png')
 
-    # ── 2FA por correo ────────────────────────────────────────────────────────
-    codigo_2fa        = db.Column(db.String(6))
-    codigo_2fa_expira = db.Column(db.DateTime)
-
     # ── Recuperación de contraseña ────────────────────────────────────────────
     reset_token        = db.Column(db.String(100), unique=True, index=True)
     reset_token_expira = db.Column(db.DateTime)
@@ -50,28 +46,6 @@ class Usuario(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
-    # ── 2FA ───────────────────────────────────────────────────────────────────
-    def generar_codigo_2fa(self):
-        """Genera un código de 6 dígitos válido por 10 minutos."""
-        import random
-        from datetime import timedelta
-        self.codigo_2fa        = str(random.randint(100000, 999999))
-        self.codigo_2fa_expira = datetime.utcnow() + timedelta(minutes=10)
-        return self.codigo_2fa
-
-    def verificar_codigo_2fa(self, codigo):
-        """Devuelve True si el código es correcto y no expiró."""
-        if not self.codigo_2fa or not self.codigo_2fa_expira:
-            return False
-        if datetime.utcnow() > self.codigo_2fa_expira:
-            return False
-        return self.codigo_2fa == str(codigo).strip()
-
-    def limpiar_codigo_2fa(self):
-        """Invalida el código después de usarlo."""
-        self.codigo_2fa        = None
-        self.codigo_2fa_expira = None
 
     # ── Recuperación de contraseña ────────────────────────────────────────────
     def generar_token_reset_password(self):

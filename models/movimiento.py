@@ -26,6 +26,9 @@ class MovimientoStock(db.Model):
     fecha        = db.Column(db.DateTime, default=datetime.utcnow)
 
     usuario      = db.relationship('Usuario', backref='movimientos')
+    producto   = db.relationship('Producto',   backref='movimientos')
+    proveedor  = db.relationship('Proveedor',  backref='movimientos')
+    usuario    = db.relationship('Usuario',    backref='movimientos')
 
     @property
     def tipo_label(self):

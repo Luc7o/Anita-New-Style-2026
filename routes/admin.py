@@ -767,6 +767,7 @@ def reportes():
     hoy   = datetime.utcnow().date()
     mes_i = datetime(hoy.year, hoy.month, 1)
 
+    # ── Ventas por mes: suma VentaFisica + Pedidos pagados ────────────────────
     ventas_por_mes = []
     for i in range(5, -1, -1):
         if hoy.month - i <= 0:
@@ -777,41 +778,111 @@ def reportes():
             y = hoy.year
         desde = datetime(y, m, 1)
         hasta = datetime(y + 1, 1, 1) if m == 12 else datetime(y, m + 1, 1)
-        total = db.session.query(func.sum(VentaFisica.total))\
-            .filter(VentaFisica.fecha >= desde, VentaFisica.fecha < hasta,
-                    VentaFisica.anulada==False).scalar() or 0
-        ventas_por_mes.append({'mes': desde.strftime('%b %Y'), 'total': float(total)})
 
-    ventas_metodo = db.session.query(
+        total_fisico = db.session.query(func.sum(VentaFisica.total))\
+            .filter(VentaFisica.fecha >= desde, VentaFisica.fecha < hasta,
+                    VentaFisica.anulada == False).scalar() or 0
+
+        total_online = db.session.query(func.sum(Pedido.total))\
+            .filter(Pedido.fecha_creacion >= desde, Pedido.fecha_creacion < hasta,
+                    Pedido.estado_pago == 'pagado',
+                    Pedido.estado != 'cancelado').scalar() or 0
+
+        ventas_por_mes.append({
+            'mes':   desde.strftime('%b %Y'),
+            'total': float(total_fisico) + float(total_online),
+        })
+
+    # ── Métodos de pago del mes: VentaFisica + Pedidos ───────────────────────
+    # Ventas físicas del mes
+    metodos_fisico = db.session.query(
         VentaFisica.metodo_pago,
         func.sum(VentaFisica.total).label('total'),
         func.count(VentaFisica.id).label('cantidad')
-    ).filter(VentaFisica.fecha >= mes_i, VentaFisica.anulada==False)\
+    ).filter(VentaFisica.fecha >= mes_i, VentaFisica.anulada == False)\
      .group_by(VentaFisica.metodo_pago).all()
 
-    top_productos = db.session.query(
-        Producto.nombre, Producto.sku,
+    # Pedidos online pagados del mes
+    metodos_online = db.session.query(
+        Pedido.metodo_pago,
+        func.sum(Pedido.total).label('total'),
+        func.count(Pedido.id).label('cantidad')
+    ).filter(Pedido.fecha_creacion >= mes_i,
+             Pedido.estado_pago == 'pagado',
+             Pedido.estado != 'cancelado')\
+     .group_by(Pedido.metodo_pago).all()
+
+    # Combinar los dos en un dict para agrupar por método
+    metodos_dict = {}
+    for row in list(metodos_fisico) + list(metodos_online):
+        key = row.metodo_pago
+        if key not in metodos_dict:
+            metodos_dict[key] = {'metodo_pago': key, 'total': 0.0, 'cantidad': 0}
+        metodos_dict[key]['total']    += float(row.total or 0)
+        metodos_dict[key]['cantidad'] += int(row.cantidad or 0)
+
+    # Convertir a lista de objetos tipo namedtuple para el template
+    from collections import namedtuple
+    MetodoPago = namedtuple('MetodoPago', ['metodo_pago', 'total', 'cantidad'])
+    ventas_metodo = [MetodoPago(**v) for v in metodos_dict.values()]
+
+    # ── Top 10 productos del mes: VentaFisica + Pedidos ──────────────────────
+    # Desde ventas físicas
+    top_fisico = db.session.query(
+        Producto.id,
+        Producto.nombre,
+        Producto.sku,
         func.sum(DetalleVenta.cantidad).label('unidades'),
         func.sum(DetalleVenta.subtotal).label('monto')
     ).join(DetalleVenta, DetalleVenta.producto_id == Producto.id)\
      .join(VentaFisica, VentaFisica.id == DetalleVenta.venta_id)\
-     .filter(VentaFisica.fecha >= mes_i, VentaFisica.anulada==False)\
-     .group_by(Producto.id, Producto.nombre, Producto.sku)\
-     .order_by(func.sum(DetalleVenta.subtotal).desc()).limit(10).all()
+     .filter(VentaFisica.fecha >= mes_i, VentaFisica.anulada == False)\
+     .group_by(Producto.id, Producto.nombre, Producto.sku).all()
 
+    # Desde pedidos online
+    top_online = db.session.query(
+        Producto.id,
+        Producto.nombre,
+        Producto.sku,
+        func.sum(DetallePedido.cantidad).label('unidades'),
+        func.sum(DetallePedido.subtotal).label('monto')
+    ).join(DetallePedido, DetallePedido.producto_id == Producto.id)\
+     .join(Pedido, Pedido.id == DetallePedido.pedido_id)\
+     .filter(Pedido.fecha_creacion >= mes_i,
+             Pedido.estado_pago == 'pagado',
+             Pedido.estado != 'cancelado')\
+     .group_by(Producto.id, Producto.nombre, Producto.sku).all()
+
+    # Combinar por producto_id
+    top_dict = {}
+    for row in list(top_fisico) + list(top_online):
+        pid = row.id
+        if pid not in top_dict:
+            top_dict[pid] = {'nombre': row.nombre, 'sku': row.sku,
+                             'unidades': 0, 'monto': 0.0}
+        top_dict[pid]['unidades'] += int(row.unidades or 0)
+        top_dict[pid]['monto']    += float(row.monto or 0)
+
+    TopProducto = namedtuple('TopProducto', ['nombre', 'sku', 'unidades', 'monto'])
+    top_productos = sorted(
+        [TopProducto(**v) for v in top_dict.values()],
+        key=lambda x: x.monto, reverse=True
+    )[:10]
+
+    # ── Inventario por categoría (sin cambios) ────────────────────────────────
     inventario_cat = db.session.query(
         Categoria.nombre,
         func.count(Producto.id).label('productos'),
         func.sum(Producto.stock).label('unidades'),
         func.sum(Producto.precio * Producto.stock).label('valor')
     ).join(Producto, Producto.categoria_id == Categoria.id)\
-     .filter(Producto.activo==True)\
+     .filter(Producto.activo == True)\
      .group_by(Categoria.id, Categoria.nombre).all()
 
     sin_stock  = Producto.query.filter_by(activo=True).filter(Producto.stock <= 0).count()
     stock_bajo = Producto.query.filter(Producto.stock > 0,
                                        Producto.stock <= Producto.stock_minimo,
-                                       Producto.activo==True).count()
+                                       Producto.activo == True).count()
 
     return render_template('admin/reportes.html',
         ventas_por_mes=ventas_por_mes, ventas_metodo=ventas_metodo,

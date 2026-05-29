@@ -58,7 +58,9 @@ TEMPLATE_2FA = """
 
 def enviar_codigo_2fa(usuario):
     """Genera y envía el código 2FA al correo del usuario."""
-    codigo = usuario.generar_codigo_2fa()
+    from models.codigo_2fa import Codigo2FA
+    registro = Codigo2FA.generar(usuario.id)   # crea el registro (sin commit aún)
+    codigo   = registro.codigo
     try:
         msg = Message(
             subject='🔐 Tu código de verificación — Anita New Style',
@@ -71,8 +73,9 @@ def enviar_codigo_2fa(usuario):
         mail.send(msg)
         return True
     except Exception as e:
-        current_app.logger.error(f'Error enviando 2FA a {usuario.email}: {e}')
-        return False
+            current_app.logger.error(f'Error enviando 2FA a {usuario.email}: {e}')
+            print(f'ERROR 2FA: {e}')   # 👈 agrega esta línea
+            return False
 
 
 TEMPLATE_RESET_PASSWORD = """

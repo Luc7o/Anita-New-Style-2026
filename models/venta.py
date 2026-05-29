@@ -53,6 +53,7 @@ class DetalleVenta(db.Model):
     talla       = db.Column(db.String(20))
     color       = db.Column(db.String(50))
     subtotal    = db.Column(db.Numeric(10, 2), nullable=False)
+    producto    = db.relationship('Producto', backref='detalles_venta')
 
     def __repr__(self):
         return f'<DetalleVenta venta={self.venta_id} prod={self.producto_id}>'

@@ -94,7 +94,7 @@
           </div>
 
           <!-- ── Panel: YAPE ─────────────────────────────────────── -->
-          <div id="panel-yape" class="panel-pago">
+          <div id="panel-yape" class="panel-pago{% if form.metodo_pago.data != 'yape' %} d-none{% endif %}">
             <div class="panel-pago-inner">
               <div class="panel-pago-header" style="background:linear-gradient(135deg,#6a0dad,#9c27b0)">
                 <span style="font-size:1.8rem">💜</span>
@@ -141,7 +141,7 @@
           </div>
 
           <!-- ── Panel: TARJETA ──────────────────────────────────── -->
-          <div id="panel-tarjeta" class="panel-pago d-none">
+          <div id="panel-tarjeta" class="panel-pago{% if form.metodo_pago.data != 'tarjeta' %} d-none{% endif %}">
             <div class="panel-pago-inner">
               <div class="panel-pago-header" style="background:linear-gradient(135deg,#1565c0,#1976d2)">
                 <i class="bi bi-credit-card" style="font-size:1.8rem"></i>
@@ -175,7 +175,7 @@
           </div>
 
           <!-- ── Panel: EFECTIVO ─────────────────────────────────── -->
-          <div id="panel-efectivo" class="panel-pago d-none">
+          <div id="panel-efectivo" class="panel-pago{% if form.metodo_pago.data != 'efectivo' %} d-none{% endif %}">
             <div class="panel-pago-inner">
               <div class="panel-pago-header" style="background:linear-gradient(135deg,#2e7d32,#388e3c)">
                 <i class="bi bi-cash-coin" style="font-size:1.8rem"></i>
@@ -222,7 +222,7 @@
           </div>
 
           <!-- ── Panel: RECOJO EN TIENDA ─────────────────────────── -->
-          <div id="panel-recojo" class="panel-pago d-none">
+          <div id="panel-recojo" class="panel-pago{% if form.metodo_pago.data != 'recojo' %} d-none{% endif %}">
             <div class="panel-pago-inner">
               <div class="panel-pago-header" style="background:linear-gradient(135deg,#e65100,#f57c00)">
                 <i class="bi bi-shop" style="font-size:1.8rem"></i>
@@ -281,8 +281,8 @@
           <!-- Badge método seleccionado -->
           <div class="text-center mt-3">
             <span class="badge-pago" id="badge-metodo">
-              <span id="badge-metodo-icon">💜</span>
-              <span id="badge-metodo-texto">Yape</span>
+              <span id="badge-metodo-icon">{{ {'yape':'💜','tarjeta':'💳','efectivo':'💵','recojo':'🏪'}.get(form.metodo_pago.data, '💜') }}</span>
+              <span id="badge-metodo-texto">{{ {'yape':'Yape','tarjeta':'Tarjeta','efectivo':'Efectivo','recojo':'Recojo en tienda'}.get(form.metodo_pago.data, 'Yape') }}</span>
             </span>
           </div>
 
@@ -346,7 +346,19 @@
 
 <!-- ─────────── JavaScript ─────────── -->
 <script>
-const TOTAL = {{ total }};
+const SUBTOTAL     = {{ subtotal }};
+const COSTO_ENVIO  = {{ costo_envio }};
+let   TOTAL        = {{ total }};  // puede cambiar si eligen recojo
+
+// Actualiza el total mostrado en el resumen según tipo_entrega
+function actualizarTotal(tipoEntrega, metodoPago) {
+  const esRecojo = (tipoEntrega === 'recojo') || (metodoPago === 'recojo');
+  const envio    = esRecojo ? 0 : COSTO_ENVIO;
+  TOTAL          = SUBTOTAL + envio;
+  const elTotal  = document.getElementById('total-mostrado');
+  if (elTotal) elTotal.textContent = 'S/ ' + TOTAL.toFixed(2);
+}
+
 
 // Mapa de configuración por método
 const METODOS = {
@@ -356,6 +368,7 @@ const METODOS = {
   recojo:   { icon: '🏪', texto: 'Recojo en tienda',  panel: 'panel-recojo'   },
 };
 
+// ── Cambiar panel de pago ───────────────────────────────────────────────────
 // ── Cambiar panel de pago ───────────────────────────────────────────────────
 function cambiarMetodoPago(val) {
   // Resaltar opción seleccionada
@@ -371,8 +384,24 @@ function cambiarMetodoPago(val) {
 
   // Actualizar badge en resumen
   const cfg = METODOS[val] || { icon: '', texto: val };
-  document.getElementById('badge-metodo-icon').textContent = cfg.icon;
+  document.getElementById('badge-metodo-icon').textContent  = cfg.icon;
   document.getElementById('badge-metodo-texto').textContent = cfg.texto;
+
+  // "Pago al recoger" → forzar recojo en entrega y recalcular total
+  if (val === 'recojo') {
+    document.querySelectorAll('.entrega-opcion input').forEach(inp => {
+      if (inp.value === 'recojo') {
+        inp.checked = true;
+        inp.closest('.entrega-opcion').classList.add('active');
+      } else {
+        inp.closest('.entrega-opcion').classList.remove('active');
+      }
+    });
+    toggleDireccion('recojo');
+  }
+
+  const entregaChecked = document.querySelector('.entrega-opcion input:checked');
+  actualizarTotal(entregaChecked ? entregaChecked.value : 'delivery', val);
 }
 
 // ── Cálculo de vuelto (efectivo) ────────────────────────────────────────────
@@ -407,6 +436,8 @@ document.querySelectorAll('.entrega-opcion input').forEach(r => {
     document.querySelectorAll('.entrega-opcion').forEach(el => el.classList.remove('active'));
     this.closest('.entrega-opcion').classList.add('active');
     toggleDireccion(this.value);
+    const metodoChecked = document.querySelector('.pago-opcion input:checked');
+    actualizarTotal(this.value, metodoChecked ? metodoChecked.value : 'yape');
   });
 });
 

@@ -4,6 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime
 from app_extensions import db
 from models.usuario import Usuario
+from models.codigo_2fa import Codigo2FA
 from forms.auth_forms import FormLogin, FormRegistro, Form2FA, FormOlvidePassword, FormRestablecerPassword
 from utils.email_2fa import enviar_codigo_2fa, enviar_recuperacion_password
 
@@ -29,7 +30,7 @@ def login():
 
         # ── Credenciales correctas → generar y enviar código 2FA ─────────────
         enviado = enviar_codigo_2fa(usuario)
-        db.session.commit()  # guarda el código generado en BD
+        db.session.commit()  # guarda el nuevo Codigo2FA en BD
 
         # Guardamos en sesión el ID y si debe recordarse
         session['2fa_usuario_id'] = usuario.id
@@ -59,9 +60,9 @@ def verificar_2fa():
 
     form = Form2FA()
     if form.validate_on_submit():
-        if usuario.verificar_codigo_2fa(form.codigo.data):
+        if Codigo2FA.verificar(usuario.id, form.codigo.data):
             # ── Código correcto ────────────────────────────────────────────
-            usuario.limpiar_codigo_2fa()
+            Codigo2FA.consumir(usuario.id, form.codigo.data)
             usuario.ultimo_acceso = datetime.utcnow()
             db.session.commit()
 
